@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'autenticacao-api'
+    static_configs:
+      - targets: ['autenticacao-api:8080']
+  - job_name: 'catalogo-api'
+    static_configs:
+      - targets: ['catalogo-api:8080']
+  - job_name: 'pedido-api'
+    static_configs:
+      - targets: ['pedido-api:8080']
+  - job_name: 'kitchen-api'
+    static_configs:
+      - targets: ['kitchen-api:8080']

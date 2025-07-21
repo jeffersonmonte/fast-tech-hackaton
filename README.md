@@ -42,21 +42,19 @@ docker build -t <seu-registry>/fasttech-kitchen-api:latest -f kitchen-api/FastTe
 docker push <seu-registry>/fasttech-kitchen-api:latest
 ```
 
-### 2. Fazer o Deploy no Kubernetes
+### 2. Executar com Docker Compose
 
-Depois de publicar as imagens, você pode fazer o deploy dos serviços no Kubernetes:
+Para executar a solução completa com o ambiente de monitoramento, execute o seguinte comando na raiz do repositório:
 
 ```bash
-# Crie o secret de TLS (substitua pelos seus próprios arquivos de certificado e chave)
-kubectl create secret tls fasttech-tls --key tls.key --cert tls.crt
-
-# Aplique os manifestos do Kubernetes
-kubectl apply -f iac/
+docker-compose up --build
 ```
 
-### 3. Testar a Aplicação
+### 3. Acessar o Grafana
 
-Depois que os serviços estiverem em execução, você pode testar a aplicação acessando os endpoints através do Ingress.
+Depois que os serviços estiverem em execução, você pode acessar o Grafana no seu navegador em [http://localhost:3000](http://localhost:3000).
+
+O dashboard "FastTech Foods Dashboard" será provisionado automaticamente e estará disponível na página inicial.
 
 ## CI/CD
 

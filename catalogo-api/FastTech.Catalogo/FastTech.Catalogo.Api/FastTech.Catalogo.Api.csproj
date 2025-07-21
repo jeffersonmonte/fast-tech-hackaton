@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FastTech.Catalogo.Application\FastTech.Catalogo.Application.csproj" />
     <ProjectReference Include="..\FastTech.Catalogo.Infrastructure\FastTech.Catalogo.Infrastructure.csproj" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.0.1" />
   </ItemGroup>
 
 </Project>

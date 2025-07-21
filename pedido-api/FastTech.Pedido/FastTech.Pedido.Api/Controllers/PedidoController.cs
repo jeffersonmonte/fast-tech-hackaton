@@ -1,6 +1,7 @@
 ﻿using FastTech.Pedido.Application.Dtos;
 using FastTech.Pedido.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Prometheus;
 
 namespace FastTech.Pedido.Api.Controllers
 {
@@ -8,6 +9,9 @@ namespace FastTech.Pedido.Api.Controllers
     [Route("api/pedidos")]
     public class PedidoController : ControllerBase
     {
+        private static readonly Counter PedidosCriados = Metrics
+            .CreateCounter("pedidos_criados_total", "Total de pedidos criados.");
+
         private readonly IPedidoService _pedidoService;
 
         public PedidoController(IPedidoService pedidoService)
@@ -19,6 +23,7 @@ namespace FastTech.Pedido.Api.Controllers
         public async Task<ActionResult<Guid>> CriarPedido([FromBody] PedidoInputDto dto)
         {
             var id = await _pedidoService.CriarPedidoAsync(dto);
+            PedidosCriados.Inc();
             return CreatedAtAction(nameof(ObterPedidoPorId), new { id }, id);
         }
 
