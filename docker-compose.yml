@@ -131,7 +131,7 @@ services:
   pedido-migrations:
     build:
       context: ./pedido-api/FastTech.Pedido
-      dockerfile: dockerfile.migrations
+      dockerfile: dockerfile-migration
     image: pedido-migrations-image
     restart: "no"
     depends_on:
