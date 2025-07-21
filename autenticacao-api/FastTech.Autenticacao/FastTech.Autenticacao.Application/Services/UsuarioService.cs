@@ -1,6 +1,7 @@
 ﻿using FastTech.Autenticacao.Application.Dtos;
 using FastTech.Autenticacao.Application.Interfaces;
 using FastTech.Autenticacao.Domain.Entities;
+using Prometheus;
 using FastTech.Autenticacao.Domain.Interfaces;
 using FastTech.Autenticacao.Domain.ValueObjects;
 using System;
@@ -10,6 +11,9 @@ namespace FastTech.Autenticacao.Application.Services
 {
     public class UsuarioService : IUsuarioService
     {
+        private static readonly Histogram LoginLatency = Metrics
+            .CreateHistogram("login_latency_seconds", "Latência da requisição de login.");
+
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly ITokenService _tokenService;
 
@@ -41,29 +45,32 @@ namespace FastTech.Autenticacao.Application.Services
 
         public async Task<UsuarioOutputDto?> AutenticarAsync(UsuarioLoginDto dto)
         {
-            Usuario? usuario = null;
-
-            if (!string.IsNullOrWhiteSpace(dto.Email))
-                usuario = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
-
-            else if (!string.IsNullOrWhiteSpace(dto.Cpf))
-                usuario = await _usuarioRepository.ObterPorCpfAsync(dto.Cpf);
-
-            if (usuario == null || !usuario.VerificarSenha(dto.Senha))
-                return null;
-
-            var usuarioRetornoDto = new UsuarioOutputDto
+            using (LoginLatency.NewTimer())
             {
-                Id = usuario.Id,
-                Nome = usuario.Nome,
-                Email = usuario.Email.Endereco,
-                Perfil = usuario.Perfil.ToString()
-            };
+                Usuario? usuario = null;
 
-            string token = _tokenService.GerarToken(usuarioRetornoDto);
-            usuarioRetornoDto.Token = token;
+                if (!string.IsNullOrWhiteSpace(dto.Email))
+                    usuario = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
 
-            return usuarioRetornoDto;
+                else if (!string.IsNullOrWhiteSpace(dto.Cpf))
+                    usuario = await _usuarioRepository.ObterPorCpfAsync(dto.Cpf);
+
+                if (usuario == null || !usuario.VerificarSenha(dto.Senha))
+                    return null;
+
+                var usuarioRetornoDto = new UsuarioOutputDto
+                {
+                    Id = usuario.Id,
+                    Nome = usuario.Nome,
+                    Email = usuario.Email.Endereco,
+                    Perfil = usuario.Perfil.ToString()
+                };
+
+                string token = _tokenService.GerarToken(usuarioRetornoDto);
+                usuarioRetornoDto.Token = token;
+
+                return usuarioRetornoDto;
+            }
         }
 
         public async Task<UsuarioOutputDto?> ObterPorIdAsync(Guid id)

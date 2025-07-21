@@ -1,6 +1,7 @@
 using FastTech.Catalogo.Application;
 using FastTech.Catalogo.Infrastructure;
 using FastTech.Catalogo.Infrastructure.Persistence.Command;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,10 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseHttpMetrics();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetrics();
 app.Run();

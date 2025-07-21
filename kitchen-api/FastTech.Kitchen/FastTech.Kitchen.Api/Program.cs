@@ -1,6 +1,7 @@
 using FastTech.Kitchen.Application.Interfaces;
 using FastTech.Kitchen.Application.Services;
 using FastTech.Kitchen.Domain.Interfaces;
+using Prometheus;
 using FastTech.Kitchen.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,8 +27,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseHttpMetrics();
+
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapMetrics();
 
 app.Run();

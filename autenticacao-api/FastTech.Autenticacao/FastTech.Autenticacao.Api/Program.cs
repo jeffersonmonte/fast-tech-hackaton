@@ -1,6 +1,7 @@
 using FastTech.Autenticacao.Application;
 using FastTech.Autenticacao.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Prometheus;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -43,7 +44,10 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseHttpMetrics();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetrics();
 app.Run();

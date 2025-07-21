@@ -1,3 +1,5 @@
+using Prometheus;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -13,6 +15,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+app.UseHttpMetrics();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetrics();
 app.Run();
