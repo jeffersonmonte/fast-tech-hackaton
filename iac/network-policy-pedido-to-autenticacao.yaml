@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pedido-to-autenticacao
+spec:
+  podSelector:
+    matchLabels:
+      app: autenticacao-api
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: pedido-api
+  policyTypes:
+  - Ingress

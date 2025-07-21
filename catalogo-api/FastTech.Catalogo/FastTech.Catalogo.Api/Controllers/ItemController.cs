@@ -1,7 +1,6 @@
 using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FastTech.Catalogo.Api.Controllers
@@ -17,7 +16,6 @@ namespace FastTech.Catalogo.Api.Controllers
             _itemService = itemService;
         }
 
-        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ItemOutputDto>>> GetTodos()
         {
@@ -25,7 +23,6 @@ namespace FastTech.Catalogo.Api.Controllers
             return Ok(itens);
         }
 
-        [AllowAnonymous]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ItemOutputDto>> GetPorId(Guid id)
         {
@@ -34,7 +31,6 @@ namespace FastTech.Catalogo.Api.Controllers
             return Ok(item);
         }
 
-        [AllowAnonymous]
         [HttpGet("tipo/{tipoId:int}")]
         public async Task<ActionResult<IEnumerable<ItemOutputDto>>> GetPorTipo(Guid tipoId)
         {
@@ -42,7 +38,6 @@ namespace FastTech.Catalogo.Api.Controllers
             return Ok(itens);
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] ItemInputDto item)
         {
@@ -50,7 +45,6 @@ namespace FastTech.Catalogo.Api.Controllers
             return CreatedAtAction(nameof(GetPorId), new { id }, null);
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpPatch("{id:guid}")]
         public async Task<ActionResult> Put([FromBody] ItemUpdateDto item)
         {
@@ -58,7 +52,6 @@ namespace FastTech.Catalogo.Api.Controllers
             return NoContent();
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpDelete("{id:guid}")]
         public async Task<ActionResult> Delete(Guid id)
         {

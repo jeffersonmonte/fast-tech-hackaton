@@ -1,6 +1,5 @@
 ﻿using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -19,7 +18,6 @@ namespace FastTech.Catalogo.API.Controllers
             _cardapioService = cardapioService;
         }
 
-        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> ObterTodos()
         {
@@ -27,7 +25,6 @@ namespace FastTech.Catalogo.API.Controllers
             return Ok(cardapios);
         }
 
-        [AllowAnonymous]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> ObterPorId(Guid id)
         {
@@ -38,7 +35,6 @@ namespace FastTech.Catalogo.API.Controllers
             return Ok(cardapio);
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpPost]
         public async Task<IActionResult> Adicionar([FromBody] CardapioInputDto dto)
         {
@@ -49,7 +45,6 @@ namespace FastTech.Catalogo.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id }, null);
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpPatch("{id:guid}")]
         public async Task<IActionResult> Atualizar(Guid id, [FromBody] CardapioUpdateDto dto)
         {
@@ -63,7 +58,6 @@ namespace FastTech.Catalogo.API.Controllers
             return NoContent();
         }
 
-        [Authorize(Policy = "Gerente")]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Remover(Guid id)
         {

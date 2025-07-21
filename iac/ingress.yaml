@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fasttech-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - fasttech.com # Substituir pelo domínio real
+    secretName: fasttech-tls
+  rules:
+  - host: fasttech.com # Substituir pelo domínio real
+    http:
+      paths:
+      - path: /api/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: autenticacao-api-service
+            port:
+              number: 80
+      - path: /api/item
+        pathType: Prefix
+        backend:
+          service:
+            name: catalogo-api-service
+            port:
+              number: 80
+      - path: /api/pedidos
+        pathType: Prefix
+        backend:
+          service:
+            name: pedido-api-service
+            port:
+              number: 80
+      - path: /api/kitchen
+        pathType: Prefix
+        backend:
+          service:
+            name: kitchen-api-service
+            port:
+              number: 80

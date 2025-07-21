@@ -28,6 +28,17 @@ public class UsuarioController : ControllerBase
         return Ok(usuario);
     }
 
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<UsuarioOutputDto>> RefreshToken([FromBody] RefreshTokenDto dto)
+    {
+        var usuario = await _usuarioService.RenovarTokenAsync(dto.Token);
+        if (usuario == null)
+            return Unauthorized();
+
+        return Ok(usuario);
+    }
+
     [HttpPost("cadastro")]
     [AllowAnonymous]
     public async Task<ActionResult<Guid>> Cadastrar([FromBody] UsuarioCadastroDto dto)

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedido-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedido-api
+  template:
+    metadata:
+      labels:
+        app: pedido-api
+    spec:
+      containers:
+      - name: pedido-api
+        image: fasttech/pedido-api:latest # Substituir pelo nome da imagem no registry
+        ports:
+        - containerPort: 80
+      - name: zabbix-agent
+        image: zabbix/zabbix-agent:latest
+        env:
+        - name: ZBX_SERVER_HOST
+          value: "zabbix-server.zabbix.svc.cluster.local" # Endereço do servidor Zabbix
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /healthz # Exemplo, endpoint de health check precisa ser implementado
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz # Exemplo, endpoint de health check precisa ser implementado
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedido-api-service
+spec:
+  selector:
+    app: pedido-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
