@@ -3,12 +3,7 @@ using FastTech.Catalogo.Domain.Interfaces;
 using FastTech.Catalogo.Infrastructure.Persistence.Command;
 using FastTech.Catalogo.Infrastructure.Persistence.Query;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FastTech.Catalogo.Infrastructure.Repositories;
 

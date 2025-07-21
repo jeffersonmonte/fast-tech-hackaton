@@ -1,5 +1,4 @@
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 

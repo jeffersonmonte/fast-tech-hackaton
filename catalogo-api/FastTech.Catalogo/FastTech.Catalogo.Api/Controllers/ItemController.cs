@@ -1,6 +1,5 @@
 using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Application.Interfaces;
-using FastTech.Catalogo.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FastTech.Catalogo.Api.Controllers

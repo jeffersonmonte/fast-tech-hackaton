@@ -1,9 +1,6 @@
 using FastTech.Kitchen.Application.Interfaces;
 using FastTech.Kitchen.Domain.Entities;
 using FastTech.Kitchen.Domain.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FastTech.Kitchen.Application.Services
 {

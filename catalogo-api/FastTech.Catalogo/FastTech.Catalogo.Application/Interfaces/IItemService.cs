@@ -1,12 +1,4 @@
 ﻿using FastTech.Catalogo.Application.Dtos;
-using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces;
-using FastTech.Catalogo.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FastTech.Catalogo.Application.Interfaces
 {

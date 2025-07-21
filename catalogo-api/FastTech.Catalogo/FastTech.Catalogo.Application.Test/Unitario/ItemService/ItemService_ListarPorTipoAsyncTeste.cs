@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FastTech.Catalogo.Application.Dtos;
-using FastTech.Catalogo.Application.Services;
+﻿using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
 using FastTech.Catalogo.Domain.ValueObjects;
 using Moq;
-using Xunit;
 
 namespace FastTech.Catalogo.Application.Test.Unitario.ItemService
 {
@@ -16,13 +10,15 @@ namespace FastTech.Catalogo.Application.Test.Unitario.ItemService
     {
         private readonly Mock<IItemRepository> _mockItemRepository;
         private readonly Mock<ITipoRefeicaoRepository> _mockTipoRefeicaoRepository;
+        private readonly Mock<IEventPublisher> _mockEventPublisher;
         private readonly Services.ItemService _itemService;
 
         public ItemService_ListarPorTipoAsyncTeste()
         {
             _mockItemRepository = new Mock<IItemRepository>();
             _mockTipoRefeicaoRepository = new Mock<ITipoRefeicaoRepository>();
-            _itemService = new Services.ItemService(_mockItemRepository.Object, _mockTipoRefeicaoRepository.Object);
+            _mockEventPublisher = new Mock<IEventPublisher>();
+            _itemService = new Services.ItemService(_mockItemRepository.Object, _mockTipoRefeicaoRepository.Object, _mockEventPublisher.Object);
         }
 
         [Fact]

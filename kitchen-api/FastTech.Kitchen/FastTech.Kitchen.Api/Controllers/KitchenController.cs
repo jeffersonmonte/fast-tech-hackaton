@@ -1,7 +1,5 @@
 using FastTech.Kitchen.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
 namespace FastTech.Kitchen.Api.Controllers
 {

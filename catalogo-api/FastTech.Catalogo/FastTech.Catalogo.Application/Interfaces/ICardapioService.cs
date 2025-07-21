@@ -1,6 +1,4 @@
 using FastTech.Catalogo.Application.Dtos;
-using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces;
 
 namespace FastTech.Catalogo.Application.Interfaces
 {

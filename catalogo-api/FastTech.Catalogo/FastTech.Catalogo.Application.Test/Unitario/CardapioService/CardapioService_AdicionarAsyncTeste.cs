@@ -1,11 +1,8 @@
-using System;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
 using Moq;
-using Xunit;
 
 namespace FastTech.Catalogo.Application.Test.Unitario.CardapioService;
 

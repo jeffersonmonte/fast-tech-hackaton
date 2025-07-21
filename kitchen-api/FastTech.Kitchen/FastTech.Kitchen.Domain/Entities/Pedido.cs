@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace FastTech.Kitchen.Domain.Entities
 {
     public class Pedido

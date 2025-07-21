@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FastTech.Kitchen.Infrastructure\FastTech.Kitchen.Infrastructure.csproj" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="8.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
   </ItemGroup>
 
 </Project>

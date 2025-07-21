@@ -1,7 +1,6 @@
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
 using Moq;
-using System;
 
 namespace FastTech.Catalogo.Application.Test.Unitario.CardapioService;
 

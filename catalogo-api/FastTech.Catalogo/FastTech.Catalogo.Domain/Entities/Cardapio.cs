@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace FastTech.Catalogo.Domain.Entities
 {
     public class Cardapio : EntidadeBase

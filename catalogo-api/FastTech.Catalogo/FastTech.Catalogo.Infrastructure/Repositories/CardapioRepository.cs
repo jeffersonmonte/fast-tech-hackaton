@@ -1,6 +1,3 @@
-using System;
-using System.ComponentModel;
-using System.Linq.Expressions;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
 using FastTech.Catalogo.Infrastructure.Persistence.Command;

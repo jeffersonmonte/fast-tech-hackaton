@@ -1,4 +1,3 @@
-using System;
 using FastTech.Catalogo.Domain.Entities;
 
 namespace FastTech.Catalogo.Domain.Interfaces;
