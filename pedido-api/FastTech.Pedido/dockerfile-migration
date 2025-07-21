@@ -1,0 +1,13 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /app
+
+COPY *.sln .
+COPY FastTech.Pedido.Api/*.csproj ./FastTech.Pedido.Api/
+COPY FastTech.Pedido.Application/*.csproj ./FastTech.Pedido.Application/
+COPY FastTech.Pedido.Domain/*.csproj ./FastTech.Pedido.Domain/
+COPY FastTech.Pedido.Infraestructure/*.csproj ./FastTech.Pedido.Infraestructure/
+RUN dotnet restore
+
+COPY . .
+WORKDIR /app/FastTech.Pedido.Api
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "../FastTech.Pedido.Infrastructure/FastTech.Pedido.Infrastructure.csproj"]
