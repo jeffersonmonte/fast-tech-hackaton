@@ -17,16 +17,12 @@ public class UsuarioService_ReativarAsyncTeste
     private readonly Mock<IUsuarioRepository> mockRepository;
     private readonly Mock<ITokenService> mockTokenService;
     private readonly Services.UsuarioService usuarioService;
-    private readonly Mock<IEventPublisher> mockEventPublisher;
-
 
     public UsuarioService_ReativarAsyncTeste()
     {
         mockRepository = new Mock<IUsuarioRepository>();
         mockTokenService = new Mock<ITokenService>();
-        mockEventPublisher = new Mock<IEventPublisher>();
-
-        usuarioService = new Services.UsuarioService(mockRepository.Object, mockTokenService.Object, mockEventPublisher.Object);
+        usuarioService = new Services.UsuarioService(mockRepository.Object, mockTokenService.Object);
     }
 
     [Fact]

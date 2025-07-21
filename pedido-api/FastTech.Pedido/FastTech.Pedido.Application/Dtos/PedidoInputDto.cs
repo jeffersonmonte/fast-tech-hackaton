@@ -9,6 +9,7 @@ namespace FastTech.Pedido.Application.Dtos
 {
     public class PedidoInputDto
     {
+        public Guid IdCliente { get; set; }
         public ClientePedidoDto Cliente { get; set; } = null!;
         public FormaEntrega FormaEntrega { get; set; }
         public List<ItemPedidoInputDto> Itens { get; set; } = [];

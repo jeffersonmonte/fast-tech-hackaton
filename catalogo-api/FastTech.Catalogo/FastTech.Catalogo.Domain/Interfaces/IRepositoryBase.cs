@@ -8,20 +8,14 @@ using System.Threading.Tasks;
 
 namespace FastTech.Catalogo.Domain.Interfaces
 {
-    public interface IQueryRepository<T> where T : EntidadeBase
+    public interface IRepositoryBase<T> where T : EntidadeBase
     {
+        Task<IEnumerable<T>> ListarTodosAsync();
         Task<IEnumerable<T>> ListarAsync(Expression<Func<T, bool>>? filtro = null);
         Task<T?> ObterAsync(Expression<Func<T, bool>> filtro);
         Task<bool> ExisteAsync(Expression<Func<T, bool>> filtro);
-        Task<IEnumerable<T>> ListarTodosAsync();
-        Task<T?> ObterPorIdAsync(Guid id);
-    }
-
-    public interface ICommandRepository<T> where T : EntidadeBase
-    {
         Task AdicionarAsync(T entidade);
-        Task<IEnumerable<T>> ListarAsync(Expression<Func<T, bool>>? filtro = null);
-        Task<T?> ObterPorIdAsync(Guid id);
+        void Atualizar(T entidade);
         void Remover(T entidade);
         Task SalvarAlteracoesAsync();
     }

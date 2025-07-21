@@ -11,8 +11,10 @@ namespace FastTech.Catalogo.Domain.Entities
         public DateTime? DataEdicao { get; private set; }
         public DateTime? DataExclusao { get; private set; }
 
-        private readonly List<Item> _itens = [];
-        public IReadOnlyCollection<Item> Itens => _itens.AsReadOnly();
+        public ICollection<Item> Itens { get; private set; } = [];
+
+        private readonly List<Guid> _itensPendentes = [];
+        public IReadOnlyCollection<Guid> ItensPendentes => _itensPendentes.AsReadOnly();
 
         protected Cardapio() { }
 
@@ -42,13 +44,27 @@ namespace FastTech.Catalogo.Domain.Entities
             DataExclusao = DateTime.UtcNow;
         }
 
-        public void AdicionarItens(IEnumerable<Item> itens)
+        public void AssociarIdItens(IEnumerable<Guid> itensId)
         {
-            if (itens == null || !itens.Any())
-                throw new ArgumentException("Item não pode ser nulo.");
+            if (itensId is null || !itensId.Any())
+                throw new ArgumentException("Necessário preencher ao menos um item.");
 
-            foreach (var item in itens)
-                AdicionarItem(item);
+            foreach (var item in itensId)
+                AssociarIdItem(item);
+        }
+
+        public void AssociarIdItem(Guid itemId)
+        {
+            if (itemId == Guid.Empty)
+                throw new ArgumentException("Id do item inválido.");
+
+            if (!_itensPendentes.Contains(itemId))
+                _itensPendentes.Add(itemId);
+        }
+
+        public void LimparIdItensAssociados()
+        {
+            _itensPendentes.Clear();
         }
 
         public void AdicionarItem(Item item)
@@ -57,7 +73,7 @@ namespace FastTech.Catalogo.Domain.Entities
                 throw new ArgumentException("Item não pode ser nulo.");
 
             if (!Itens.Any(i => i.Id == item.Id))
-                _itens.Add(item);
+                Itens.Add(item);
         }
 
         public void RemoverItem(Item item)
@@ -65,12 +81,12 @@ namespace FastTech.Catalogo.Domain.Entities
             if (item == null || !Itens.Contains(item))
                 throw new ArgumentException("Item inválido para remoção.");
 
-            _itens.Remove(item);
+            Itens.Remove(item);
         }
 
-        public void LimparItens()
+        public IEnumerable<Item> ListarItens()
         {
-            _itens.Clear();
+            return Itens;
         }
 
         private static void ValidarDados(string nome, string? descricao)

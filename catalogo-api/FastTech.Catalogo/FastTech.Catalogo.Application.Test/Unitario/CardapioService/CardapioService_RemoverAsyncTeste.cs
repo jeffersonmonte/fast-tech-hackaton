@@ -1,66 +1,57 @@
 using System;
 using System.Threading.Tasks;
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces.Command;
-using FastTech.Catalogo.Domain.Interfaces.Query;
+using FastTech.Catalogo.Domain.Interfaces;
 using Moq;
 using Xunit;
 
 namespace FastTech.Catalogo.Application.Test.Unitario.CardapioService;
 
-[Trait("Category", "Unit")]
 public class CardapioService_RemoverTeste
 {
-    private readonly Mock<ICardapioQueryRepository> _mockQueryRepo;
-    private readonly Mock<ICardapioCommandRepository> _mockCommandRepo;
-    private readonly Mock<IItemQueryRepository> _mockItemQueryRepo;
-    private readonly Mock<IItemCommandRepository> _mockItemCommandRepo;
-    private readonly Services.CardapioService _service;
+    private readonly Mock<ICardapioRepository> mockRepository;
+    private readonly Mock<IItemRepository> mockItemRepository;
+    private readonly Services.CardapioService cardapioService;
 
     public CardapioService_RemoverTeste()
     {
-        _mockQueryRepo = new Mock<ICardapioQueryRepository>();
-        _mockCommandRepo = new Mock<ICardapioCommandRepository>();
-        _mockItemQueryRepo = new Mock<IItemQueryRepository>();
-        _mockItemCommandRepo = new Mock<IItemCommandRepository>();
-
-        _service = new Services.CardapioService(
-            _mockCommandRepo.Object,
-            _mockQueryRepo.Object,
-            _mockItemCommandRepo.Object,
-            _mockItemQueryRepo.Object
-        );
+        mockRepository = new Mock<ICardapioRepository>();
+        mockItemRepository = new Mock<IItemRepository>();
+        cardapioService = new Services.CardapioService(mockRepository.Object, mockItemRepository.Object);
     }
 
     [Fact]
     public async Task Remover_ComIdValido_DeveRemoverComSucesso()
     {
         // Arrange
-        var cardapio = new Cardapio("Cardápio Teste", "Descrição Teste", DateTime.UtcNow);
+        var cardapioASeDeletar = new Cardapio("Cardapio Teste", "Descricao Teste", DateTime.UtcNow);
 
-        _mockCommandRepo
-            .Setup(repo => repo.ObterPorIdAsync(cardapio.Id))
-            .ReturnsAsync(cardapio);
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(cardapioASeDeletar.Id))
+            .ReturnsAsync(cardapioASeDeletar);
+
+        mockRepository
+            .Setup(repo => repo.Atualizar(cardapioASeDeletar));
 
         // Act
-        await _service.RemoverAsync(cardapio.Id);
+        await cardapioService.RemoverAsync(cardapioASeDeletar.Id);
 
         // Assert
-        _mockCommandRepo.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Once);
+        mockRepository.Verify(repo => repo.Atualizar(cardapioASeDeletar), Times.Once);
     }
 
     [Fact]
     public async Task Remover_ComIdInvalido_DeveLancarExcecao()
     {
         // Arrange
-        var idInvalido = Guid.NewGuid();
+        var cardapioASeDeletar = new Cardapio("Cardapio Teste", "Descricao Teste", DateTime.UtcNow);
 
-        _mockCommandRepo
-            .Setup(repo => repo.ObterPorIdAsync(idInvalido))
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(cardapioASeDeletar.Id))
             .ReturnsAsync((Cardapio)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.RemoverAsync(idInvalido));
-        _mockCommandRepo.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => cardapioService.RemoverAsync(cardapioASeDeletar.Id));
+        mockRepository.Verify(repo => repo.Remover(It.IsAny<Cardapio>()), Times.Never);
     }
 }

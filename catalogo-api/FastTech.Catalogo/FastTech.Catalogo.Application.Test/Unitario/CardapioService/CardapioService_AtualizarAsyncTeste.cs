@@ -1,118 +1,132 @@
 using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces.Command;
-using FastTech.Catalogo.Domain.Interfaces.Query;
+using FastTech.Catalogo.Domain.Interfaces;
 using Moq;
 using System;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace FastTech.Catalogo.Application.Test.Unitario.CardapioService;
 
-[Trait("Category", "Unit")]
 public class CardapioService_AtualizarAsyncTeste
 {
-    private readonly Mock<ICardapioCommandRepository> _mockCommandRepo;
-    private readonly Mock<ICardapioQueryRepository> _mockQueryRepo;
-    private readonly Mock<IItemCommandRepository> _mockItemCommandRepo;
-    private readonly Mock<IItemQueryRepository> _mockItemQueryRepo;
-
-    private readonly FastTech.Catalogo.Application.Services.CardapioService _service;
+    private readonly Mock<IItemRepository> mockItemRepository;
+    private readonly Mock<ICardapioRepository> mockRepository;
+    private readonly Services.CardapioService cardapioService;
 
     public CardapioService_AtualizarAsyncTeste()
     {
-        _mockCommandRepo = new Mock<ICardapioCommandRepository>();
-        _mockQueryRepo = new Mock<ICardapioQueryRepository>();
-        _mockItemCommandRepo = new Mock<IItemCommandRepository>();
-        _mockItemQueryRepo = new Mock<IItemQueryRepository>();
-
-        _service = new FastTech.Catalogo.Application.Services.CardapioService(
-            _mockCommandRepo.Object,
-            _mockQueryRepo.Object,
-            _mockItemCommandRepo.Object,
-            _mockItemQueryRepo.Object);
+        mockItemRepository = new Mock<IItemRepository>();
+        mockRepository = new Mock<ICardapioRepository>();
+        cardapioService = new Services.CardapioService(mockRepository.Object, mockItemRepository.Object);
     }
 
     [Fact]
     public async Task AtualizarCardapio_ComNovoNomeEDescricao_DeveAtualizarComSucesso()
     {
-        var item = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
-        var cardapio = new Cardapio("Antigo", "Desc", DateTime.UtcNow);
-        var dto = new CardapioUpdateDto
+        // Arrange
+        var item = new Item("Nome", "Descricao", new("Tipo"), new(20));
+        var cardapioExistente = new Cardapio("Cardapio Antigo", "Descricao Antiga", DateTime.UtcNow);
+        var atualizarDto = new CardapioUpdateDto
         {
-            Id = cardapio.Id,
-            Nome = "Atualizado",
-            Descricao = "Nova desc",
+            Id = cardapioExistente.Id,
+            Nome = "Cardapio Atualizado",
+            Descricao = "Descricao Atualizada",
             ItensIds = [item.Id]
         };
 
-        _mockCommandRepo.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(cardapio);
-        _mockQueryRepo.Setup(r => r.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>())).ReturnsAsync(false);
-        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>())).ReturnsAsync([item]);
-        _mockCommandRepo.Setup(r => r.LimparItensESalvarAsync(dto.Id)).Returns(Task.CompletedTask);
-        _mockCommandRepo.Setup(r => r.SalvarAlteracoesAsync()).Returns(Task.CompletedTask);
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(cardapioExistente.Id))
+            .ReturnsAsync(cardapioExistente);
 
-        await _service.AtualizarAsync(dto);
+        mockRepository
+            .Setup(repo => repo.Atualizar(It.IsAny<Cardapio>()));
 
-        _mockCommandRepo.Verify(r => r.SalvarAlteracoesAsync(), Times.Once);
+        mockItemRepository
+            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
+            .ReturnsAsync([item]);
+
+        // Act
+        await cardapioService.AtualizarAsync(atualizarDto);
+
+        // Assert
+        mockRepository.Verify(repo => repo.Atualizar(It.IsAny<Cardapio>()), Times.Once);
     }
 
     [Fact]
     public async Task AtualizarCardapio_ComIdInexistente_DeveLancarExcecao()
     {
-        var dto = new CardapioUpdateDto
+        // Arrange
+        var atualizarDto = new CardapioUpdateDto
         {
             Id = Guid.NewGuid(),
-            Nome = "Atualizado",
-            Descricao = "Nova desc",
+            Nome = "Cardapio Atualizado",
+            Descricao = "Descricao Atualizada",
             ItensIds = [Guid.NewGuid()]
         };
 
-        _mockCommandRepo.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync((Cardapio)null!);
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Cardapio)null!);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.AtualizarAsync(dto));
-        _mockCommandRepo.Verify(r => r.SalvarAlteracoesAsync(), Times.Never);
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AtualizarAsync(atualizarDto));
+        mockRepository.Verify(repo => repo.Atualizar(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AtualizarCardapio_ComItensNaoExistentes_DeveLancarExcecao()
     {
-        var cardapio = new Cardapio("Antigo", "Desc", DateTime.UtcNow);
-        var dto = new CardapioUpdateDto
+        // Arrange
+        var cardapioExistente = new Cardapio("Cardapio Antigo", "Descricao Antiga", DateTime.UtcNow);
+        var atualizarDto = new CardapioUpdateDto
         {
-            Id = cardapio.Id,
-            Nome = "Atualizado",
-            Descricao = "Nova desc",
+            Id = cardapioExistente.Id,
+            Nome = "Cardapio Atualizado",
+            Descricao = "Descricao Atualizada",
             ItensIds = [Guid.NewGuid()]
         };
 
-        _mockCommandRepo.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(cardapio);
-        _mockQueryRepo.Setup(r => r.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>())).ReturnsAsync(false);
-        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>())).ReturnsAsync([]);
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(cardapioExistente.Id))
+            .ReturnsAsync(cardapioExistente);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.AtualizarAsync(dto));
-        _mockCommandRepo.Verify(r => r.SalvarAlteracoesAsync(), Times.Never);
+        mockItemRepository
+            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
+            .ReturnsAsync([]);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AtualizarAsync(atualizarDto));
+        mockRepository.Verify(repo => repo.Atualizar(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AtualizarCardapio_ComNomeDuplicado_DeveLancarExcecao()
     {
-        var item = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
-        var cardapio = new Cardapio("Antigo", "Desc", DateTime.UtcNow);
-        var dto = new CardapioUpdateDto
+        // Arrange
+        var item = new Item("Nome", "Descricao", new("Tipo"), new(20));
+        var cardapioExistente = new Cardapio("Cardapio Antigo", "Descricao Antiga", DateTime.UtcNow);
+        var atualizarDto = new CardapioUpdateDto
         {
-            Id = cardapio.Id,
-            Nome = "Duplicado",
-            Descricao = "Nova desc",
+            Id = cardapioExistente.Id,
+            Nome = "NomeDuplicado",
+            Descricao = "Descricao Atualizada",
             ItensIds = [item.Id]
         };
 
-        _mockCommandRepo.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(cardapio);
-        _mockQueryRepo.Setup(r => r.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>())).ReturnsAsync(true);
-        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>())).ReturnsAsync([item]);
+        mockRepository
+            .Setup(repo => repo.ObterPorIdAsync(cardapioExistente.Id))
+            .ReturnsAsync(cardapioExistente);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.AtualizarAsync(dto));
-        _mockCommandRepo.Verify(r => r.SalvarAlteracoesAsync(), Times.Never);
+        mockRepository
+            .Setup(repo => repo.ObterPorNomeAsync(atualizarDto.Nome))
+            .ReturnsAsync(new Cardapio("NomeDuplicado", "Descricao Atualizada", DateTime.Now));
+
+        mockItemRepository
+            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
+            .ReturnsAsync([item]);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => cardapioService.AtualizarAsync(atualizarDto));
+        mockRepository.Verify(repo => repo.Atualizar(It.IsAny<Cardapio>()), Times.Never);
     }
 }
