@@ -146,7 +146,7 @@ services:
   pedido-api:
     build:
       context: ./pedido-api/FastTech.Pedido
-      dockerfile: dockerfile
+      dockerfile: FastTech.Pedido.Api/Dockerfile
     image: pedido-api-image
     ports:
       - "8083:8080"
