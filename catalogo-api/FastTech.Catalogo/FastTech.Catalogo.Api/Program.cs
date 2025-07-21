@@ -1,6 +1,7 @@
 using FastTech.Catalogo.Application;
 using FastTech.Catalogo.Infrastructure;
 using FastTech.Catalogo.Infrastructure.Persistence.Command;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 

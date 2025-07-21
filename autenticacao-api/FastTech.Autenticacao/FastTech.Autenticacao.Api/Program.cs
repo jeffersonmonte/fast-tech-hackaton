@@ -1,6 +1,7 @@
 using FastTech.Autenticacao.Application;
 using FastTech.Autenticacao.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Prometheus;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 

@@ -1,6 +1,7 @@
 using FastTech.Kitchen.Application.Interfaces;
 using FastTech.Kitchen.Application.Services;
 using FastTech.Kitchen.Domain.Interfaces;
+using Prometheus;
 using FastTech.Kitchen.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
