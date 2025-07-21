@@ -1,0 +1,30 @@
+# Imagem base com runtime do .NET 8
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+# Imagem para build com SDK do .NET 8
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia o solution e os projetos (ajuste os nomes conforme sua estrutura real)
+COPY ["FastTech.Pedido.Api/FastTech.Pedido.Api.csproj", "FastTech.Pedido.Api/"]
+COPY ["FastTech.Pedido.Application/FastTech.Pedido.Application.csproj", "FastTech.Pedido.Application/"]
+COPY ["FastTech.Pedido.Domain/FastTech.Pedido.Domain.csproj", "FastTech.Pedido.Domain/"]
+COPY ["FastTech.Pedido.Infrastructure/FastTech.Pedido.Infrastructure.csproj", "FastTech.Pedido.Infrastructure/"]
+
+# Restaura os pacotes
+RUN dotnet restore "FastTech.Pedido.Api/FastTech.Pedido.Api.csproj"
+
+# Copia tudo e publica em Release
+COPY . .
+WORKDIR "/src/FastTech.Pedido.Api"
+RUN dotnet publish -c Release -o /app/publish
+
+# Cria a imagem final
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# Ponto de entrada da API
+ENTRYPOINT ["dotnet", "FastTech.Pedido.Api.dll"]

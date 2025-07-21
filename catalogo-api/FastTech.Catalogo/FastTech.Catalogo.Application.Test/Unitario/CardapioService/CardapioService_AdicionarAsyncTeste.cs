@@ -1,9 +1,11 @@
 using System;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces;
+using FastTech.Catalogo.Domain.Interfaces.Command;
+using FastTech.Catalogo.Domain.Interfaces.Query;
 using Moq;
 using Xunit;
 
@@ -12,147 +14,142 @@ namespace FastTech.Catalogo.Application.Test.Unitario.CardapioService;
 [Trait("Category", "Unit")]
 public class CardapioService_AdicionarAsyncTeste
 {
-    // GIVEN
-    private readonly Mock<ICardapioRepository> mockRepository;
-    private readonly Mock<IItemRepository> mockItemRepository;
-    private readonly FastTech.Catalogo.Application.Services.CardapioService cardapioService;
+    private readonly Mock<ICardapioCommandRepository> _mockCommandRepo;
+    private readonly Mock<ICardapioQueryRepository> _mockQueryRepo;
+    private readonly Mock<IItemCommandRepository> _mockItemCommandRepo;
+    private readonly Mock<IItemQueryRepository> _mockItemQueryRepo;
+
+    private readonly FastTech.Catalogo.Application.Services.CardapioService _service;
 
     public CardapioService_AdicionarAsyncTeste()
     {
-        mockRepository = new Mock<ICardapioRepository>();
-        mockItemRepository = new Mock<IItemRepository>();
-        cardapioService = new FastTech.Catalogo.Application.Services.CardapioService(mockRepository.Object, mockItemRepository.Object);
+        _mockCommandRepo = new Mock<ICardapioCommandRepository>();
+        _mockQueryRepo = new Mock<ICardapioQueryRepository>();
+        _mockItemCommandRepo = new Mock<IItemCommandRepository>();
+        _mockItemQueryRepo = new Mock<IItemQueryRepository>();
+
+        _service = new FastTech.Catalogo.Application.Services.CardapioService(
+            _mockCommandRepo.Object,
+            _mockQueryRepo.Object,
+            _mockItemCommandRepo.Object,
+            _mockItemQueryRepo.Object);
     }
 
     [Fact]
     public async Task AdicionarCardapio_ComGuidsExistentes_DeveAdicionarComSucesso()
     {
-        // Arrange
-        var item = new Item("Nome", "Descricao", new("Tipo"), new(20));
-        var novoCardapio = new CardapioInputDto
+        var item = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
+        var dto = new CardapioInputDto
         {
-            Nome = "Nome",
-            Descricao = "Descrição",
+            Nome = "Novo Cardápio",
+            Descricao = "Desc",
             ItensIds = [item.Id]
         };
 
-        mockItemRepository
-            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
-            .ReturnsAsync([item]);
+        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>()))
+                            .ReturnsAsync([item]);
 
-        mockRepository
-            .Setup(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()))
-            .Returns(Task.CompletedTask);
+        _mockQueryRepo.Setup(r => r.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>()))
+                      .ReturnsAsync(false);
+
+        _mockCommandRepo.Setup(r => r.AdicionarAsync(It.IsAny<Cardapio>()))
+                        .Returns(Task.CompletedTask);
 
         // Act
-        var novoId = await cardapioService.AdicionarAsync(novoCardapio);
+        var id = await _service.AdicionarAsync(dto);
 
         // Assert
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Once);
-        Assert.NotEqual(Guid.Empty, novoId);
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Once);
+        Assert.NotEqual(Guid.Empty, id);
     }
 
     [Fact]
     public async Task AdicionarCardapio_ComItensNaoExistentes_DeveLancarExcecao()
     {
-        // Arrange
-        var novoCardapio = new CardapioInputDto
+        var dto = new CardapioInputDto
         {
             Nome = "Nome",
-            Descricao = "Descrição",
+            Descricao = "Desc",
             ItensIds = [Guid.NewGuid()]
         };
 
-        mockItemRepository
-            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
-            .ReturnsAsync([]);
+        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>()))
+                            .ReturnsAsync([]);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AdicionarAsync(novoCardapio));
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AdicionarAsync(dto));
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AdicionarCardapio_SemItens_DeveLancarExcecao()
     {
-        // Arrange
-        var novoCardapio = new CardapioInputDto
+        var dto = new CardapioInputDto
         {
-            Nome = "Nome",
-            Descricao = "Descrição",
+            Nome = "Cardápio",
+            Descricao = "Desc",
             ItensIds = []
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AdicionarAsync(novoCardapio));
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AdicionarAsync(dto));
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AdicionarCardapio_ComNomeDuplicado_DeveLancarExcecao()
     {
-        // Arrange
-        var item = new Item("Nome", "Descricao", new("Tipo"), new(20));
-        var novoCardapio = new CardapioInputDto
+        var item = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
+        var dto = new CardapioInputDto
         {
-            Nome = "NomeDuplicado",
-            Descricao = "Descrição",
+            Nome = "Duplicado",
+            Descricao = "Desc",
             ItensIds = [item.Id]
         };
 
-        mockItemRepository
-            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
-            .ReturnsAsync([item]);
+        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>()))
+                            .ReturnsAsync([item]);
 
-        mockRepository
-            .Setup(repo => repo.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>()))
-            .ReturnsAsync(true);
+        _mockQueryRepo.Setup(r => r.ExisteAsync(It.IsAny<Expression<Func<Cardapio, bool>>>()))
+                      .ReturnsAsync(true);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => cardapioService.AdicionarAsync(novoCardapio));
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.AdicionarAsync(dto));
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AdicionarCardapio_ComNomeVazio_DeveLancarExcecao()
     {
-        // Arrange
-        var item = new Item("Nome", "Descricao", new("Tipo"), new(20));
-        var novoCardapio = new CardapioInputDto
+        var item = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
+        var dto = new CardapioInputDto
         {
-            Nome = string.Empty,
-            Descricao = "Descricao",
+            Nome = "",
+            Descricao = "Desc",
             ItensIds = [item.Id]
         };
 
-        mockItemRepository
-            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
-            .ReturnsAsync([item]);
+        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>()))
+                            .ReturnsAsync([item]);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AdicionarAsync(novoCardapio));
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AdicionarAsync(dto));
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
     }
 
     [Fact]
     public async Task AdicionarCardapio_ComItensParcialmenteExistentes_DeveLancarExcecao()
     {
-        // Arrange
-        var itemExistente = new Item("Nome", "Descricao", new("Tipo"), new(20));
-        var itemInexistenteId = Guid.NewGuid();
-        var novoCardapio = new CardapioInputDto
+        var existente = new Item("Nome", "Descricao", Guid.NewGuid(), new(20));
+        var inexistente = Guid.NewGuid();
+
+        var dto = new CardapioInputDto
         {
-            Nome = "Nome",
-            Descricao = "Descrição",
-            ItensIds = [itemExistente.Id, itemInexistenteId]
+            Nome = "Novo",
+            Descricao = "Desc",
+            ItensIds = [existente.Id, inexistente]
         };
 
-        mockItemRepository
-            .Setup(repo => repo.ListarAsync(It.IsAny<Expression<Func<Item, bool>>?>()))
-            .ReturnsAsync([itemExistente]);
+        _mockItemCommandRepo.Setup(r => r.ListarAsync(It.IsAny<Expression<Func<Item, bool>>>()))
+                            .ReturnsAsync([existente]);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => cardapioService.AdicionarAsync(novoCardapio));
-        mockRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AdicionarAsync(dto));
+        _mockCommandRepo.Verify(r => r.AdicionarAsync(It.IsAny<Cardapio>()), Times.Never);
     }
 }

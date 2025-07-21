@@ -20,6 +20,7 @@ namespace FastTech.Catalogo.Domain.Entities
         public TipoRefeicao(string nome)
         {
             Validar(nome);
+            Id = Guid.NewGuid();
             Nome = nome;
             DataCriacao = DateTime.UtcNow;
             DataEdicao = null;

@@ -6,11 +6,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FastTech.Autenticacao.Infrastructure.Security
 {
@@ -27,24 +29,27 @@ namespace FastTech.Autenticacao.Infrastructure.Security
         {
             var chaveSecreta = _configuration["SecretJWT"]!;
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenPropriedades = new SecurityTokenDescriptor()
             {
-                new Claim("Nome", usuario.Nome),
-                new Claim("Email", usuario.Email),
-                new Claim("Perfil", usuario.Perfil),
-                new Claim("Id", usuario.Id.ToString())
+                Subject = new ClaimsIdentity(
+                [
+                    new Claim("Nome", usuario.Nome),
+                    new Claim("Email", usuario.Email),
+                    new Claim("Perfil", usuario.Perfil),
+                    new Claim("Id", usuario.Id.ToString())
+                ]),
+
+                Expires = DateTime.UtcNow.AddHours(8),
+
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta)),
+                    SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var token = tokenHandler.CreateToken(tokenPropriedades);
+            var tokenPlainText = tokenHandler.WriteToken(token);
+            return tokenPlainText;
         }
     }
 }

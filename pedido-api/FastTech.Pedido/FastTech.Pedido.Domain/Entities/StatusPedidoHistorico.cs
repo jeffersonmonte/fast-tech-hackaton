@@ -9,18 +9,21 @@ namespace FastTech.Pedido.Domain.Entities
 {
     public class StatusPedidoHistorico : EntidadeBase
     {
+        public Guid PedidoId { get; set; }
         public StatusPedido Status { get; private set; }
         public DateTime DataHora { get; private set; }
         public Guid? IdFuncionarioResponsavel { get; private set; }
         public string? Observacao { get; private set; }
 
-        public StatusPedidoHistorico(StatusPedido status, Guid? idFuncionario, string? observacao)
+        public StatusPedidoHistorico() { }
+        public StatusPedidoHistorico(Guid pedidoId, StatusPedido status, Guid? idFuncionario, string? observacao)
         {
             Id = Guid.NewGuid();
             Status = status;
             DataHora = DateTime.UtcNow;
             IdFuncionarioResponsavel = idFuncionario;
             Observacao = observacao;
+            PedidoId = pedidoId;
         }
     }
 }

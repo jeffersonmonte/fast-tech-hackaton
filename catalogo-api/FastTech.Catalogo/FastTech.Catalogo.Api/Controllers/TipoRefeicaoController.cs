@@ -1,5 +1,6 @@
 ﻿using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FastTech.Catalogo.Api.Controllers
@@ -15,6 +16,7 @@ namespace FastTech.Catalogo.Api.Controllers
             _tipoService = tipoService;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TipoRefeicao>>> GetTodos()
         {
@@ -22,6 +24,7 @@ namespace FastTech.Catalogo.Api.Controllers
             return Ok(tipos);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<TipoRefeicao>> GetPorId(Guid id)
         {
@@ -30,6 +33,7 @@ namespace FastTech.Catalogo.Api.Controllers
             return Ok(tipo);
         }
 
+        [AllowAnonymous]
         [HttpGet("nome/{nome}")]
         public async Task<ActionResult<TipoRefeicao>> GetPorNome(string nome)
         {

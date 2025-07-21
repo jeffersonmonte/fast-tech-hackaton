@@ -9,27 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 var key = Encoding.ASCII.GetBytes(configuration.GetValue<string>("SecretJWT")!);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key)
-        };
-    });
-
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("Funcionario", policy =>
-        policy.RequireClaim("Perfil", "Funcionario"))
-    .AddPolicy("Gerente", policy =>
-        policy.RequireClaim("Perfil", "Gerente"))
-    .AddPolicy("Cliente", policy =>
-        policy.RequireClaim("Perfil", "Cliente"));
-
+builder.Services.AddJwtAuthentication(key);
+builder.Services.AddPolicies();
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 

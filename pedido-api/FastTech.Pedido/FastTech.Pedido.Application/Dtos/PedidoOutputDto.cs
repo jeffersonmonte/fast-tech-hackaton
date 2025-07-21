@@ -10,6 +10,7 @@ namespace FastTech.Pedido.Application.Dtos
     {
         public Guid Id { get; set; }
         public string CodigoPedido { get; set; } = null!;
+        public string NomeCliente { get; set; } = null!;
         public string Status { get; set; } = null!;
         public string FormaEntrega { get; set; } = null!;
         public decimal ValorTotal { get; set; }

@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FastTech.Pedido.Application\FastTech.Pedido.Application.csproj" />
     <ProjectReference Include="..\FastTech.Pedido.Domain\FastTech.Pedido.Domain.csproj" />
+    <ProjectReference Include="..\FastTech.Pedido.Infrastructure\FastTech.Pedido.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,92 +1,119 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FastTech.Catalogo.Application.Dtos;
-using FastTech.Catalogo.Application.Services;
+﻿using FastTech.Catalogo.Application.Dtos;
+using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces;
+using FastTech.Catalogo.Domain.Interfaces.Command;
+using FastTech.Catalogo.Domain.Interfaces.Query;
 using FastTech.Catalogo.Domain.ValueObjects;
 using Moq;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace FastTech.Catalogo.Application.Test.Unitario.ItemService
+namespace FastTech.Catalogo.Application.Test.Unitario.ItemService;
+
+[Trait("Category", "Unit")]
+public class ItemService_AdicionarAsyncTeste
 {
-    public class ItemService_AdicionarAsyncTeste
+    private readonly Mock<IItemCommandRepository> _mockItemCommandRepository;
+    private readonly Mock<IItemQueryRepository> _mockItemQueryRepository;
+    private readonly Mock<ITipoRefeicaoQueryRepository> _mockTipoRefeicaoQueryRepository;
+    private readonly Mock<IEventPublisher> _mockEventPublisher;
+    private readonly FastTech.Catalogo.Application.Services.ItemService _itemService;
+
+    public ItemService_AdicionarAsyncTeste()
     {
-        private readonly Mock<IItemRepository> _mockItemRepository;
-        private readonly Mock<ITipoRefeicaoRepository> _mockTipoRefeicaoRepository;
-        private readonly Services.ItemService _itemService;
+        _mockItemCommandRepository = new Mock<IItemCommandRepository>();
+        _mockItemQueryRepository = new Mock<IItemQueryRepository>();
+        _mockTipoRefeicaoQueryRepository = new Mock<ITipoRefeicaoQueryRepository>();
+        _mockEventPublisher = new Mock<IEventPublisher>();
 
-        public ItemService_AdicionarAsyncTeste()
+        _itemService = new FastTech.Catalogo.Application.Services.ItemService(
+            _mockItemCommandRepository.Object,
+            _mockItemQueryRepository.Object,
+            _mockTipoRefeicaoQueryRepository.Object,
+            _mockEventPublisher.Object
+        );
+    }
+
+    [Fact]
+    public async Task AdicionarAsync_ComDadosValidos_DeveAdicionarItem()
+    {
+        // Arrange
+        var tipo = new TipoRefeicao("Tipo Teste");
+        var dto = new ItemInputDto
         {
-            _mockItemRepository = new Mock<IItemRepository>();
-            _mockTipoRefeicaoRepository = new Mock<ITipoRefeicaoRepository>();
-            _itemService = new Services.ItemService(_mockItemRepository.Object, _mockTipoRefeicaoRepository.Object);
-        }
+            Nome = "Item Teste",
+            Descricao = "Descrição Teste",
+            TipoRefeicaoId = Guid.NewGuid(),
+            Valor = 10.0m
+        };
 
-        [Fact]
-        public async Task AdicionarAsync_ComDadosValidos_DeveAdicionarItem()
+        _mockTipoRefeicaoQueryRepository
+            .Setup(r => r.ObterPorIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(tipo);
+
+        _mockItemQueryRepository
+            .Setup(r => r.ObterPorNomeAsync(dto.Nome))
+            .ReturnsAsync((Item)null!);
+
+        _mockItemCommandRepository
+            .Setup(r => r.AdicionarAsync(It.IsAny<Item>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _itemService.AdicionarAsync(dto);
+
+        // Assert
+        Assert.NotEqual(Guid.Empty, result);
+        _mockItemCommandRepository.Verify(r => r.AdicionarAsync(It.IsAny<Item>()), Times.Once);
+        _mockItemCommandRepository.Verify(r => r.SalvarAlteracoesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task AdicionarAsync_ComTipoInvalido_DeveLancarExcecao()
+    {
+        // Arrange
+        var dto = new ItemInputDto
         {
-            // Arrange
-            var tipo = new TipoRefeicao("Tipo Teste");
-            var dto = new ItemInputDto
-            {
-                Nome = "Item Teste",
-                Descricao = "Descrição Teste",
-                TipoRefeicaoId = Guid.NewGuid(),
-                Valor = 10.0m
-            };
-            _mockTipoRefeicaoRepository.Setup(repo => repo.ObterPorIdAsync(dto.TipoRefeicaoId)).ReturnsAsync(tipo);
-            _mockItemRepository.Setup(repo => repo.AdicionarAsync(It.IsAny<Item>())).Returns(Task.CompletedTask);
+            Nome = "Item Teste",
+            Descricao = "Descrição Teste",
+            TipoRefeicaoId = Guid.NewGuid(),
+            Valor = 10.0m
+        };
 
-            // Act
-            var result = await _itemService.AdicionarAsync(dto);
+        _mockTipoRefeicaoQueryRepository
+            .Setup(r => r.ObterPorIdAsync(dto.TipoRefeicaoId))
+            .ReturnsAsync((TipoRefeicao)null!);
 
-            // Assert
-            Assert.NotEqual(Guid.Empty, result);
-            _mockItemRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Item>()), Times.Once);
-            _mockItemRepository.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Once);
-        }
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _itemService.AdicionarAsync(dto));
+        _mockItemCommandRepository.Verify(r => r.AdicionarAsync(It.IsAny<Item>()), Times.Never);
+    }
 
-        [Fact]
-        public async Task AdicionarAsync_ComTipoInvalido_DeveLancarExcecao()
+    [Fact]
+    public async Task AdicionarAsync_ComNomeDuplicado_DeveLancarExcecao()
+    {
+        // Arrange
+        var tipo = new TipoRefeicao("Tipo Teste");
+        var itemExistente = new Item("Item Duplicado", "Descrição Teste", tipo.Id, new Preco(10.0m));
+        var dto = new ItemInputDto
         {
-            // Arrange
-            var dto = new ItemInputDto
-            {
-                Nome = "Item Teste",
-                Descricao = "Descrição Teste",
-                TipoRefeicaoId = Guid.NewGuid(),
-                Valor = 10.0m
-            };
-            _mockTipoRefeicaoRepository.Setup(repo => repo.ObterPorIdAsync(dto.TipoRefeicaoId)).ReturnsAsync((TipoRefeicao)null!);
+            Nome = "Item Duplicado",
+            Descricao = "Descrição Teste",
+            TipoRefeicaoId = tipo.Id,
+            Valor = 10.0m
+        };
 
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _itemService.AdicionarAsync(dto));
-            _mockItemRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Item>()), Times.Never);
-        }
+        _mockTipoRefeicaoQueryRepository
+            .Setup(r => r.ObterPorIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(tipo);
 
-        [Fact]
-        public async Task AdicionarAsync_ComNomeDuplicado_DeveLancarExcecao()
-        {
-            // Arrange
-            var tipo = new TipoRefeicao("Tipo Teste");
-            var itemDuplicado = new Item("Item Duplicado", "Descrição Teste", tipo.Id, new Preco(10.0m));
-            var dto = new ItemInputDto
-            {
-                Nome = "Item Duplicado",
-                Descricao = "Descrição Teste",
-                TipoRefeicaoId = itemDuplicado.TipoRefeicaoId,
-                Valor = 10.0m
-            };
+        _mockItemQueryRepository
+            .Setup(r => r.ObterPorNomeAsync(dto.Nome))
+            .ReturnsAsync(itemExistente);
 
-            _mockTipoRefeicaoRepository.Setup(repo => repo.ObterPorIdAsync(dto.TipoRefeicaoId)).ReturnsAsync(tipo);
-            _mockItemRepository.Setup(repo => repo.ObterPorNomeAsync(dto.Nome)).ReturnsAsync(itemDuplicado);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _itemService.AdicionarAsync(dto));
-            _mockItemRepository.Verify(repo => repo.AdicionarAsync(It.IsAny<Item>()), Times.Never);
-        }
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _itemService.AdicionarAsync(dto));
+        _mockItemCommandRepository.Verify(r => r.AdicionarAsync(It.IsAny<Item>()), Times.Never);
     }
 }

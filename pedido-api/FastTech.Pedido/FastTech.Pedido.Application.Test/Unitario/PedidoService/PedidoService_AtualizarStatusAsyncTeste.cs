@@ -1,12 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using FastTech.Pedido.Application.Dtos;
+﻿using FastTech.Pedido.Application.Dtos;
+using FastTech.Pedido.Application.Interfaces;
 using FastTech.Pedido.Application.Services;
 using FastTech.Pedido.Domain.Entities;
 using FastTech.Pedido.Domain.Enums;
-using FastTech.Pedido.Domain.Interfaces;
+using FastTech.Pedido.Domain.Interfaces.Command;
+using FastTech.Pedido.Domain.Interfaces.Query;
 using FastTech.Pedido.Domain.ValueObjects;
 using Moq;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace FastTech.Pedido.Application.Test.Unitario.PedidoService;
@@ -14,13 +16,20 @@ namespace FastTech.Pedido.Application.Test.Unitario.PedidoService;
 [Trait("Category", "Unit")]
 public class PedidoService_AtualizarStatusAsyncTeste
 {
-    private readonly Mock<IPedidoRepository> mockPedidoRepository;
+    private readonly Mock<IPedidoCommandRepository> mockPedidoCommand;
+    private readonly Mock<IPedidoQueryRepository> mockPedidoQuery;
+    private readonly Mock<IStatusPedidoHistoricoCommandRepository> mockStatusHistoricoPedidoCommand;
+    private readonly Mock<IEventPublisher> mockEventPublisher;
     private readonly Services.PedidoService pedidoService;
 
     public PedidoService_AtualizarStatusAsyncTeste()
     {
-        mockPedidoRepository = new Mock<IPedidoRepository>();
-        pedidoService = new Services.PedidoService(mockPedidoRepository.Object);
+        mockPedidoCommand = new Mock<IPedidoCommandRepository>();
+        mockPedidoQuery = new Mock<IPedidoQueryRepository>();
+        mockStatusHistoricoPedidoCommand = new Mock<IStatusPedidoHistoricoCommandRepository>();
+        mockEventPublisher = new Mock<IEventPublisher>();
+
+        pedidoService = new Services.PedidoService(mockPedidoCommand.Object, mockPedidoQuery.Object, mockStatusHistoricoPedidoCommand.Object, mockEventPublisher.Object);
     }
 
     [Fact]
@@ -28,7 +37,6 @@ public class PedidoService_AtualizarStatusAsyncTeste
     {
         // Arrange
         var pedidoExistente = new Domain.Entities.Pedido(
-            Guid.NewGuid(),
             new ClientePedido(Guid.NewGuid(), "Maria", "maria@email.com"),
             FormaEntrega.Delivery
         );
@@ -41,11 +49,11 @@ public class PedidoService_AtualizarStatusAsyncTeste
             Observacao = "Iniciando preparo"
         };
 
-        mockPedidoRepository
-            .Setup(repo => repo.ObterPorId(dto.IdPedido))
+        mockPedidoCommand
+            .Setup(repo => repo.ObterPorIdAsync(dto.IdPedido))
             .ReturnsAsync(pedidoExistente);
 
-        mockPedidoRepository
+        mockPedidoCommand
             .Setup(repo => repo.SalvarAlteracoesAsync())
             .Returns(Task.CompletedTask);
 
@@ -53,9 +61,8 @@ public class PedidoService_AtualizarStatusAsyncTeste
         await pedidoService.AtualizarStatusAsync(dto);
 
         // Assert
-        mockPedidoRepository.Verify(repo => repo.ObterPorId(dto.IdPedido), Times.Once);
-        mockPedidoRepository.Verify(repo => repo.Atualizar(It.IsAny<Domain.Entities.Pedido>()), Times.Once);
-        mockPedidoRepository.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Once);
+        mockPedidoCommand.Verify(repo => repo.ObterPorIdAsync(dto.IdPedido), Times.Once);
+        mockPedidoCommand.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Once);
     }
 
     [Fact]
@@ -70,15 +77,14 @@ public class PedidoService_AtualizarStatusAsyncTeste
             Observacao = "Pedido finalizado"
         };
 
-        mockPedidoRepository
-            .Setup(repo => repo.ObterPorId(dto.IdPedido))
+        mockPedidoCommand
+            .Setup(repo => repo.ObterPorIdAsync(dto.IdPedido))
             .ReturnsAsync((Domain.Entities.Pedido?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => pedidoService.AtualizarStatusAsync(dto));
 
-        mockPedidoRepository.Verify(repo => repo.ObterPorId(dto.IdPedido), Times.Once);
-        mockPedidoRepository.Verify(repo => repo.Atualizar(It.IsAny<Domain.Entities.Pedido>()), Times.Never);
-        mockPedidoRepository.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Never);
+        mockPedidoCommand.Verify(repo => repo.ObterPorIdAsync(dto.IdPedido), Times.Once);
+        mockPedidoCommand.Verify(repo => repo.SalvarAlteracoesAsync(), Times.Never);
     }
 }
