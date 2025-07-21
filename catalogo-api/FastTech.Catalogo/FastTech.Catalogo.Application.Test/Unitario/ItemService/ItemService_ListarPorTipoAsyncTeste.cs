@@ -1,64 +1,78 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FastTech.Catalogo.Application.Dtos;
+﻿using FastTech.Catalogo.Application.Dtos;
+using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Application.Services;
 using FastTech.Catalogo.Domain.Entities;
-using FastTech.Catalogo.Domain.Interfaces;
+using FastTech.Catalogo.Domain.Interfaces.Query;
 using FastTech.Catalogo.Domain.ValueObjects;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace FastTech.Catalogo.Application.Test.Unitario.ItemService
+namespace FastTech.Catalogo.Application.Test.Unitario.ItemService;
+
+[Trait("Category", "Unit")]
+public class ItemService_ListarPorTipoAsyncTeste
 {
-    public class ItemService_ListarPorTipoAsyncTeste
+    private readonly Mock<IItemQueryRepository> _mockItemQueryRepository;
+    private readonly Mock<ITipoRefeicaoQueryRepository> _mockTipoRefeicaoQueryRepository;
+    private readonly Mock<IEventPublisher> _mockEventPublisher;
+    private readonly FastTech.Catalogo.Application.Services.ItemService _itemService;
+
+    public ItemService_ListarPorTipoAsyncTeste()
     {
-        private readonly Mock<IItemRepository> _mockItemRepository;
-        private readonly Mock<ITipoRefeicaoRepository> _mockTipoRefeicaoRepository;
-        private readonly Services.ItemService _itemService;
+        _mockItemQueryRepository = new Mock<IItemQueryRepository>();
+        _mockTipoRefeicaoQueryRepository = new Mock<ITipoRefeicaoQueryRepository>();
+        _mockEventPublisher = new Mock<IEventPublisher>();
 
-        public ItemService_ListarPorTipoAsyncTeste()
+        _itemService = new FastTech.Catalogo.Application.Services.ItemService(
+            itemCommandRepository: null!, // Não é usado neste caso
+            _mockItemQueryRepository.Object,
+            _mockTipoRefeicaoQueryRepository.Object,
+            _mockEventPublisher.Object
+        );
+    }
+
+    [Fact]
+    public async Task ListarPorTipoAsync_ComTipoValido_DeveRetornarItens()
+    {
+        // Arrange
+        var tipoId = Guid.NewGuid();
+        var itens = new List<Item>
         {
-            _mockItemRepository = new Mock<IItemRepository>();
-            _mockTipoRefeicaoRepository = new Mock<ITipoRefeicaoRepository>();
-            _itemService = new Services.ItemService(_mockItemRepository.Object, _mockTipoRefeicaoRepository.Object);
-        }
+            new("Item 1", "Descrição 1", tipoId, new Preco(10.0m))
+        };
 
-        [Fact]
-        public async Task ListarPorTipoAsync_ComTipoValido_DeveRetornarItens()
-        {
-            // Arrange
-            var tipoId = Guid.NewGuid();
-            var itens = new List<Item>
-            {
-                new("Item 1", "Descrição 1", new TipoRefeicao("Tipo 1").Id, new Preco(10.0m))
-            };
-            _mockItemRepository.Setup(repo => repo.ListarPorTipoAsync(tipoId)).ReturnsAsync(itens);
+        _mockItemQueryRepository
+            .Setup(repo => repo.ListarPorTipoAsync(tipoId))
+            .ReturnsAsync(itens);
 
-            // Act
-            var result = await _itemService.ListarPorTipoAsync(tipoId);
+        // Act
+        var result = await _itemService.ListarPorTipoAsync(tipoId);
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.Single(result);
-            _mockItemRepository.Verify(repo => repo.ListarPorTipoAsync(tipoId), Times.Once);
-        }
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result);
+        _mockItemQueryRepository.Verify(repo => repo.ListarPorTipoAsync(tipoId), Times.Once);
+    }
 
-        [Fact]
-        public async Task ListarPorTipoAsync_ComTipoInvalido_DeveRetornarListaVazia()
-        {
-            // Arrange
-            var tipoId = Guid.NewGuid();
-            _mockItemRepository.Setup(repo => repo.ListarPorTipoAsync(tipoId)).ReturnsAsync([]);
+    [Fact]
+    public async Task ListarPorTipoAsync_ComTipoInvalido_DeveRetornarListaVazia()
+    {
+        // Arrange
+        var tipoId = Guid.NewGuid();
 
-            // Act
-            var result = await _itemService.ListarPorTipoAsync(tipoId);
+        _mockItemQueryRepository
+            .Setup(repo => repo.ListarPorTipoAsync(tipoId))
+            .ReturnsAsync([]);
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.Empty(result);
-            _mockItemRepository.Verify(repo => repo.ListarPorTipoAsync(tipoId), Times.Once);
-        }
+        // Act
+        var result = await _itemService.ListarPorTipoAsync(tipoId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+        _mockItemQueryRepository.Verify(repo => repo.ListarPorTipoAsync(tipoId), Times.Once);
     }
 }

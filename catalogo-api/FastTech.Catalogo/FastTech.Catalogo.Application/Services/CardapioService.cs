@@ -2,23 +2,34 @@ using FastTech.Catalogo.Application.Dtos;
 using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
+using FastTech.Catalogo.Domain.Interfaces.Command;
+using FastTech.Catalogo.Domain.Interfaces.Query;
 
 namespace FastTech.Catalogo.Application.Services
 {
     public class CardapioService : ICardapioService
     {
-        private readonly ICardapioRepository _cardapioRepository;
-        private readonly IItemRepository _itemRepository;
+        private readonly ICardapioCommandRepository _cardapioCommandRepository;
+        private readonly ICardapioQueryRepository _cardapioQueryRepository;
+        private readonly IItemCommandRepository _itemCommandRepository;
+        private readonly IItemQueryRepository _itemQueryRepository;
 
-        public CardapioService(ICardapioRepository cardapioRepository, IItemRepository itemRepository)
+        public CardapioService(
+            ICardapioCommandRepository cardapioCommandRepository
+            , ICardapioQueryRepository cardapioQueryRepository
+            , IItemCommandRepository itemCommandRepository
+            , IItemQueryRepository itemQueryRepository
+            )
         {
-            _cardapioRepository = cardapioRepository;
-            _itemRepository = itemRepository;
+            _cardapioCommandRepository = cardapioCommandRepository;
+            _cardapioQueryRepository = cardapioQueryRepository;
+            _itemCommandRepository = itemCommandRepository;
+            _itemQueryRepository = itemQueryRepository;
         }
 
         public async Task<IEnumerable<CardapioOutputDto>> ObterTodosAsync()
         {
-            var cardapios = await _cardapioRepository.ListarTodosAsync();
+            var cardapios = await _cardapioQueryRepository.ListarTodosAsync();
             return cardapios is null || !cardapios.Any() ? [] : MapearCardapiosParaOutputs(cardapios);
         }
 
@@ -27,7 +38,7 @@ namespace FastTech.Catalogo.Application.Services
             if(id == Guid.Empty)
                 throw new ArgumentException("O ID do cardápio não pode ser vazio.", nameof(id));
 
-            var cardapio = await _cardapioRepository.ObterPorIdAsync(id);
+            var cardapio = await _cardapioQueryRepository.ObterPorIdAsync(id);
             return cardapio is null ? null : MapearCardapioParaOutput(cardapio);
         }
 
@@ -35,57 +46,58 @@ namespace FastTech.Catalogo.Application.Services
         {
             var entidade = new Cardapio(cardapio.Nome, cardapio.Descricao, DateTime.UtcNow);
 
-            var itens = await _itemRepository.ListarAsync(i => cardapio.ItensIds.Contains(i.Id));
+            var itens = await _itemCommandRepository.ListarAsync(i => cardapio.ItensIds.Contains(i.Id) && i.DataExclusao == null);
 
             if (itens.Count() != cardapio.ItensIds.Count())
                 throw new ArgumentException("Alguns itens não existem ou não estão disponíveis.");
 
-            entidade.AssociarIdItens(itens.Select(i => i.Id));
+            entidade.AdicionarItens(itens);
 
-            if(await _cardapioRepository.ExisteAsync(c => c.Nome == cardapio.Nome && c.DataExclusao == null))
+            if(await _cardapioQueryRepository.ExisteAsync(c => c.Nome == cardapio.Nome && c.DataExclusao == null))
                 throw new InvalidOperationException("Já existe um cardápio com esse nome.");
 
-            await _cardapioRepository.AdicionarAsync(entidade);
-            await _cardapioRepository.SalvarAlteracoesAsync();
+            await _cardapioCommandRepository.AdicionarAsync(entidade);
+            await _cardapioCommandRepository.SalvarAlteracoesAsync();
 
             return entidade.Id;
         }
 
-        public async Task AtualizarAsync(CardapioUpdateDto cardapio)
+        public async Task AtualizarAsync(CardapioUpdateDto dto)
         {
-            var entidade = await _cardapioRepository.ObterPorIdAsync(cardapio.Id);
-
-            if(entidade is null)
+            var entidade = await _cardapioCommandRepository.ObterPorIdAsync(dto.Id);
+            if (entidade is null)
                 throw new ArgumentException("Cardápio não encontrado.");
 
-            var entidadeMesmoNome = await _cardapioRepository.ObterPorNomeAsync(cardapio.Nome);
-
-            if(entidadeMesmoNome is not null)
+            var existeMesmoNome = await _cardapioQueryRepository.ExisteAsync(c =>
+                                            c.Nome.ToLower().Equals(dto.Nome.ToLower()) 
+                                            && c.Id != dto.Id 
+                                            && c.DataExclusao == null);
+            if (existeMesmoNome)
                 throw new InvalidOperationException("Já existe um cardápio com esse nome.");
 
-            var itens = await _itemRepository.ListarAsync(i => cardapio.ItensIds.Contains(i.Id));
+            var itens = await _itemCommandRepository.ListarAsync(i => dto.ItensIds.Contains(i.Id) && i.DataExclusao == null);
+            if (itens.Count() != dto.ItensIds.Count())
+                throw new ArgumentException("Alguns itens não existem ou foram excluídos.");
 
-            if (itens.Count() != cardapio.ItensIds.Count())
-                throw new ArgumentException("Alguns itens não existem ou não estão disponíveis.");
+            entidade.Atualizar(dto.Nome, dto.Descricao);
 
-            entidade.Atualizar(cardapio.Nome, cardapio.Descricao);
-            entidade.AssociarIdItens(itens.Select(i => i.Id));
+            await _cardapioCommandRepository.LimparItensESalvarAsync(entidade.Id);
 
-            _cardapioRepository.Atualizar(entidade);
-            await _cardapioRepository.SalvarAlteracoesAsync();
+            entidade.LimparItens();
+            entidade.AdicionarItens(itens);
+
+            await _cardapioCommandRepository.SalvarAlteracoesAsync();
         }
 
         public async Task RemoverAsync(Guid id)
         {
-            var entidade = await _cardapioRepository.ObterPorIdAsync(id);
-
+            var entidade = await _cardapioCommandRepository.ObterPorIdAsync(id);
             if (entidade is null)
                 throw new InvalidOperationException("Cardápio não encontrado.");
 
             entidade.Excluir();
 
-            _cardapioRepository.Remover(entidade);
-            await _cardapioRepository.SalvarAlteracoesAsync();
+            await _cardapioCommandRepository.SalvarAlteracoesAsync();
         }
 
         private static IEnumerable<CardapioOutputDto> MapearCardapiosParaOutputs(IEnumerable<Cardapio> cardapios)

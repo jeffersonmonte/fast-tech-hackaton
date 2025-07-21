@@ -12,11 +12,13 @@ namespace FastTech.Autenticacao.Application.Services
     {
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly ITokenService _tokenService;
+        private readonly IEventPublisher _eventPublisher;
 
-        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService)
+        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService, IEventPublisher eventPublisher)
         {
             _usuarioRepository = usuarioRepository;
             _tokenService = tokenService;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<Guid> CadastrarAsync(UsuarioCadastroDto dto)
@@ -35,6 +37,15 @@ namespace FastTech.Autenticacao.Application.Services
 
             await _usuarioRepository.AdicionarAsync(usuario);
             await _usuarioRepository.SalvarAlteracoesAsync();
+
+            await _eventPublisher.PublishAsync("autenticacao.usuario", "usuario.created", new UsuarioCreatedDto
+            {
+                Id = usuario.Id,
+                Nome = usuario.Nome,
+                Email = usuario.Email.Endereco,
+                Cpf = usuario.Cpf?.Numero,
+                Perfil = usuario.Perfil
+            });
 
             return usuario.Id;
         }

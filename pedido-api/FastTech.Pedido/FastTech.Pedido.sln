@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastTech.Pedido.Application
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastTech.Pedido.Domain", "FastTech.Pedido.Domain\FastTech.Pedido.Domain.csproj", "{9FA1FDAD-67A0-4005-BAE1-6C8EBD5F8151}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastTech.Pedido.Infraestructure", "FastTech.Pedido.Infraestructure\FastTech.Pedido.Infraestructure.csproj", "{A907FB18-82C2-4C92-BD64-19FC9F6988D1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastTech.Pedido.Infrastructure", "FastTech.Pedido.Infrastructure\FastTech.Pedido.Infrastructure.csproj", "{A907FB18-82C2-4C92-BD64-19FC9F6988D1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastTech.Pedido.Application.Test", "FastTech.Pedido.Application.Test\FastTech.Pedido.Application.Test.csproj", "{C2D2A881-6D77-43BD-B500-ECB916DB20A9}"
 EndProject

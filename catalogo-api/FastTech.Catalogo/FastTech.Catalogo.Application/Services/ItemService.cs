@@ -2,6 +2,8 @@
 using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
+using FastTech.Catalogo.Domain.Interfaces.Command;
+using FastTech.Catalogo.Domain.Interfaces.Query;
 using FastTech.Catalogo.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -13,50 +15,57 @@ namespace FastTech.Catalogo.Application.Services
 {
     public class ItemService : IItemService
     {
-        private readonly IItemRepository _itemRepository;
-        private readonly ITipoRefeicaoRepository _tipoRefeicaoRepository;
+        private readonly IItemCommandRepository _itemCommandRepository;
+        private readonly IItemQueryRepository _itemQueryRepository;
+        private readonly ITipoRefeicaoQueryRepository _tipoRefeicaoQueryRepository;
         private readonly IEventPublisher _eventPublisher;
 
-        public ItemService(IItemRepository itemRepository, ITipoRefeicaoRepository tipoRefeicaoRepository, IEventPublisher eventPublisher)
+        public ItemService(
+            IItemCommandRepository itemCommandRepository
+            , IItemQueryRepository itemQueryRepository
+            , ITipoRefeicaoQueryRepository tipoRefeicaoQueryRepository
+            , IEventPublisher eventPublisher
+            )
         {
-            _itemRepository = itemRepository;
-            _tipoRefeicaoRepository = tipoRefeicaoRepository;
+            _itemCommandRepository = itemCommandRepository;
+            _itemQueryRepository = itemQueryRepository;
+            _tipoRefeicaoQueryRepository = tipoRefeicaoQueryRepository;
             _eventPublisher = eventPublisher;
         }
 
         public async Task<ItemOutputDto?> ObterPorIdAsync(Guid id)
         {
-            var item = await _itemRepository.ObterPorIdAsync(id);
+            var item = await _itemQueryRepository.ObterPorIdAsync(id);
             return item is null ? null : MapearItemParaOutput(item);
         }
 
         public async Task<IEnumerable<ItemOutputDto>> ListarTodosAsync()
         {
-            var itens = await _itemRepository.ListarTodosAsync();
+            var itens = await _itemQueryRepository.ListarTodosAsync();
             return MapearItensParaOutputs(itens);
         }
 
         public async Task<IEnumerable<ItemOutputDto>> ListarPorTipoAsync(Guid tipoRefeicaoId)
         {
-            var itens = await _itemRepository.ListarPorTipoAsync(tipoRefeicaoId);
+            var itens = await _itemQueryRepository.ListarPorTipoAsync(tipoRefeicaoId);
             return itens is null || !itens.Any() ? [] : MapearItensParaOutputs(itens);
         }
 
         public async Task<Guid> AdicionarAsync(ItemInputDto dto)
         {
-            var tipo = await _tipoRefeicaoRepository.ObterPorIdAsync(dto.TipoRefeicaoId);
+            var tipo = await _tipoRefeicaoQueryRepository.ObterPorIdAsync(dto.TipoRefeicaoId);
             if (tipo is null)
                 throw new InvalidOperationException("Tipo de refeição inválido.");
 
-            var itemMesmoNome = await _itemRepository.ObterPorNomeAsync(dto.Nome);
-            if(itemMesmoNome is not null)
+            var itemMesmoNome = await _itemQueryRepository.ObterPorNomeAsync(dto.Nome);
+            if (itemMesmoNome is not null)
                 throw new InvalidOperationException("Já existe um item com o mesmo nome.");
 
             var item = new Item(dto.Nome, dto.Descricao, tipo.Id, new Preco(dto.Valor));
-            await _itemRepository.AdicionarAsync(item);
-            await _itemRepository.SalvarAlteracoesAsync();
+            await _itemCommandRepository.AdicionarAsync(item);
+            await _itemCommandRepository.SalvarAlteracoesAsync();
 
-            await _eventPublisher.PublishAsync("catalogo.item", "item.updated", new ItemCreatedEvent
+            await _eventPublisher.PublishAsync("catalogo.item", "item.created", new ItemCreatedEvent
             {
                 Id = item.Id,
                 Nome = item.Nome,
@@ -70,20 +79,21 @@ namespace FastTech.Catalogo.Application.Services
 
         public async Task AtualizarAsync(ItemUpdateDto dto)
         {
-            var existente = await _itemRepository.ObterPorIdAsync(dto.Id);
+            var existente = await _itemCommandRepository.ObterPorIdAsync(dto.Id);
             if (existente is null)
                 throw new ArgumentException("Item não encontrado.");
 
-            var tipo = await _tipoRefeicaoRepository.ObterPorIdAsync(dto.TipoRefeicaoId);
+            var tipo = await _tipoRefeicaoQueryRepository.ObterPorIdAsync(dto.TipoRefeicaoId);
             if (tipo is null)
                 throw new ArgumentException("Tipo de refeição inválido.");
 
-            var itemMesmoNome = await _itemRepository.ObterPorNomeAsync(dto.Nome);
+            var itemMesmoNome = await _itemQueryRepository.ObterPorNomeAsync(dto.Nome);
             if (itemMesmoNome is not null && itemMesmoNome.Id != dto.Id)
                 throw new InvalidOperationException("Já existe um item com o mesmo nome.");
 
             existente.Atualizar(dto.Nome, dto.Descricao, tipo.Id, new Preco(dto.Valor));
-            _itemRepository.Atualizar(existente);
+
+            await _itemCommandRepository.SalvarAlteracoesAsync();
 
             await _eventPublisher.PublishAsync("catalogo.item", "item.updated", new ItemUpdatedEvent
             {
@@ -94,20 +104,18 @@ namespace FastTech.Catalogo.Application.Services
                 Valor = existente.Preco.Valor
             });
 
-            await _itemRepository.SalvarAlteracoesAsync();
+            await _itemCommandRepository.SalvarAlteracoesAsync();
         }
 
         public async Task RemoverAsync(Guid id)
         {
-            var existente = await _itemRepository.ObterPorIdAsync(id);
-
+            var existente = await _itemCommandRepository.ObterPorIdAsync(id);
             if (existente is null)
                 throw new InvalidOperationException("Item não encontrado.");
 
             existente.Excluir();
 
-            _itemRepository.Atualizar(existente);
-            await _itemRepository.SalvarAlteracoesAsync();
+            await _itemCommandRepository.SalvarAlteracoesAsync();
         }
 
         private static IEnumerable<ItemOutputDto> MapearItensParaOutputs(IEnumerable<Item> itens)

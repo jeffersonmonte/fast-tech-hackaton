@@ -1,11 +1,13 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using FastTech.Pedido.Application.Interfaces;
 using FastTech.Pedido.Application.Services;
 using FastTech.Pedido.Domain.Entities;
 using FastTech.Pedido.Domain.Enums;
-using FastTech.Pedido.Domain.Interfaces;
+using FastTech.Pedido.Domain.Interfaces.Command;
+using FastTech.Pedido.Domain.Interfaces.Query;
 using FastTech.Pedido.Domain.ValueObjects;
 using Moq;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace FastTech.Pedido.Application.Test.Unitario.PedidoService;
@@ -13,13 +15,21 @@ namespace FastTech.Pedido.Application.Test.Unitario.PedidoService;
 [Trait("Category", "Unit")]
 public class PedidoService_ObterPedidoCompletoAsyncTeste
 {
-    private readonly Mock<IPedidoRepository> mockPedidoRepository;
+    private readonly Mock<IPedidoCommandRepository> mockPedidoCommand;
+    private readonly Mock<IPedidoQueryRepository> mockPedidoQuery;
+    private readonly Mock<IStatusPedidoHistoricoCommandRepository> mockStatusHistoricoPedidoCommand;
     private readonly Services.PedidoService pedidoService;
+    private readonly Mock<IEventPublisher> mockEventPublisher;
+
 
     public PedidoService_ObterPedidoCompletoAsyncTeste()
     {
-        mockPedidoRepository = new Mock<IPedidoRepository>();
-        pedidoService = new Services.PedidoService(mockPedidoRepository.Object);
+        mockPedidoCommand = new Mock<IPedidoCommandRepository>();
+        mockPedidoQuery = new Mock<IPedidoQueryRepository>();
+        mockStatusHistoricoPedidoCommand = new Mock<IStatusPedidoHistoricoCommandRepository>();
+        mockEventPublisher = new Mock<IEventPublisher>();
+
+        pedidoService = new Services.PedidoService(mockPedidoCommand.Object, mockPedidoQuery.Object, mockStatusHistoricoPedidoCommand.Object, mockEventPublisher.Object);
     }
 
     [Fact]
@@ -27,20 +37,19 @@ public class PedidoService_ObterPedidoCompletoAsyncTeste
     {
         // Arrange
         var pedido = new Domain.Entities.Pedido(
-            Guid.NewGuid(),
             new ClientePedido(Guid.NewGuid(), "Carlos", "carlos@email.com"),
             FormaEntrega.DriveThru
         );
 
-        mockPedidoRepository
-            .Setup(repo => repo.ObterPorId(pedido.Id))
+        mockPedidoQuery
+            .Setup(repo => repo.ObterPorIdAsync(pedido.Id))
             .ReturnsAsync(pedido);
 
         // Act
         var resultado = await pedidoService.ObterPedidoCompletoAsync(pedido.Id);
 
         // Assert
-        mockPedidoRepository.Verify(repo => repo.ObterPorId(pedido.Id), Times.Once);
+        mockPedidoQuery.Verify(repo => repo.ObterPorIdAsync(pedido.Id), Times.Once);
         Assert.NotNull(resultado);
         Assert.Equal(pedido.Id, resultado!.Id);
         Assert.Equal(pedido.CodigoPedido, resultado.CodigoPedido);
@@ -52,15 +61,15 @@ public class PedidoService_ObterPedidoCompletoAsyncTeste
         // Arrange
         var id = Guid.NewGuid();
 
-        mockPedidoRepository
-            .Setup(repo => repo.ObterPorId(id))
+        mockPedidoQuery
+            .Setup(repo => repo.ObterPorIdAsync(id))
             .ReturnsAsync((Domain.Entities.Pedido?)null);
 
         // Act
         var resultado = await pedidoService.ObterPedidoCompletoAsync(id);
 
         // Assert
-        mockPedidoRepository.Verify(repo => repo.ObterPorId(id), Times.Once);
+        mockPedidoQuery.Verify(repo => repo.ObterPorIdAsync(id), Times.Once);
         Assert.Null(resultado);
     }
 }

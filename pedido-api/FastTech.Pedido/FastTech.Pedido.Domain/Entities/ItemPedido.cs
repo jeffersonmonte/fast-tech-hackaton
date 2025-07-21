@@ -8,16 +8,17 @@ namespace FastTech.Pedido.Domain.Entities
 {
     public class ItemPedido : EntidadeBase
     {
-        public Guid IdItemCardapio { get; private set; }
+        public Guid IdItem { get; private set; }
         public string Nome { get; private set; }
         public decimal PrecoUnitario { get; private set; }
         public int Quantidade { get; private set; }
         public decimal Subtotal => PrecoUnitario * Quantidade;
 
+        public ItemPedido() { }
         public ItemPedido(Guid idItemCardapio, string nome, decimal precoUnitario, int quantidade)
         {
             Id = Guid.NewGuid();
-            IdItemCardapio = idItemCardapio;
+            IdItem = idItemCardapio;
             Nome = nome;
             PrecoUnitario = precoUnitario;
             Quantidade = quantidade;
