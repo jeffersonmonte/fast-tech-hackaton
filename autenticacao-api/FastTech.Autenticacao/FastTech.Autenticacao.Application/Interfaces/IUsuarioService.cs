@@ -11,6 +11,7 @@ namespace FastTech.Autenticacao.Application.Interfaces
     {
         Task<Guid> CadastrarAsync(UsuarioCadastroDto dto);
         Task<UsuarioOutputDto?> AutenticarAsync(UsuarioLoginDto dto);
+        Task<UsuarioOutputDto> RenovarTokenAsync(string refreshToken);
         Task<UsuarioOutputDto?> ObterPorIdAsync(Guid id);
         Task AtualizarSenhaAsync(Guid idUsuario, string novaSenha);
         Task InativarAsync(Guid idUsuario);
