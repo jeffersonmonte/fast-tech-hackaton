@@ -1,0 +1,25 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia os projetos
+COPY ["FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj", "FastTech.Autenticacao.Api/"]
+COPY ["FastTech.Autenticacao.Application/FastTech.Autenticacao.Application.csproj", "FastTech.Autenticacao.Application/"]
+COPY ["FastTech.Autenticacao.Domain/FastTech.Autenticacao.Domain.csproj", "FastTech.Autenticacao.Domain/"]
+COPY ["FastTech.Autenticacao.Infrastructure/FastTech.Autenticacao.Infrastructure.csproj", "FastTech.Autenticacao.Infrastructure/"]
+
+# Restore dos projetos principais
+RUN dotnet restore "FastTech.Autenticacao.Infrastructure/FastTech.Autenticacao.Infrastructure.csproj"
+RUN dotnet restore "FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj"
+
+# Copia todo o código
+COPY . .
+
+# Volta pra pasta do migration
+WORKDIR "/src/FastTech.Autenticacao.Infrastructure"
+
+# Instala dotnet-ef
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Agora os paths estão relativos ao WORKDIR
+ENTRYPOINT ["sh", "-c", "dotnet ef database update --context AutenticacaoCommandDbContext --project FastTech.Autenticacao.Infrastructure.csproj"]

@@ -1,0 +1,25 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia os projetos
+COPY ["FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj", "FastTech.Catalogo.Api/"]
+COPY ["FastTech.Catalogo.Application/FastTech.Catalogo.Application.csproj", "FastTech.Catalogo.Application/"]
+COPY ["FastTech.Catalogo.Domain/FastTech.Catalogo.Domain.csproj", "FastTech.Catalogo.Domain/"]
+COPY ["FastTech.Catalogo.Infrastructure/FastTech.Catalogo.Infrastructure.csproj", "FastTech.Catalogo.Infrastructure/"]
+
+# Restore dos projetos principais
+RUN dotnet restore "FastTech.Catalogo.Infrastructure/FastTech.Catalogo.Infrastructure.csproj"
+RUN dotnet restore "FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj"
+
+# Copia todo o código
+COPY . .
+
+# Volta pra pasta do migration
+WORKDIR "/src/FastTech.Catalogo.Infrastructure"
+
+# Instala dotnet-ef
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+# Agora os paths estão relativos ao WORKDIR
+ENTRYPOINT ["sh", "-c", "dotnet ef database update --context CatalogoCommandDbContext --project FastTech.Catalogo.Infrastructure.csproj"]

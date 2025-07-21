@@ -1,0 +1,170 @@
+version: '3.9'
+
+services:
+  # ---------- RabbitMQ ----------
+  rabbitmq:
+    image: masstransit/rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      - fasttech-network
+
+  # ---------- Catalogo ----------
+  catalogo-mysql:
+    image: mysql:8.0
+    ports:
+      - "3310:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=fasttech_catalogo
+    volumes:
+      - catalogo_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - fasttech-network
+
+  catalogo-migrations:
+    build:
+      context: ./catalogo-api/FastTech.Catalogo
+      dockerfile: dockerfile-migration
+    image: catalogo-migrations-image
+    restart: "no"
+    depends_on:
+      catalogo-mysql:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CONNECTION_STRING=Server=catalogo-mysql;Database=fasttech_catalogo;User=root;Password=123456;Port=3306;
+    networks:
+      - fasttech-network
+
+  catalogo-api:
+    build:
+      context: ./catalogo-api/FastTech.Catalogo
+      dockerfile: dockerfile
+    image: catalogo-api-image
+    ports:
+      - "8081:8080"
+    depends_on:
+      catalogo-mysql:
+        condition: service_healthy
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CONNECTION_STRING=Server=catalogo-mysql;Database=fasttech_catalogo;User=root;Password=123456;Port=3306;
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - fasttech-network
+  # ---------- Auth ----------
+  auth-mysql:
+    image: mysql:8.0
+    ports:
+      - "3311:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=fasttech_autenticacao
+    volumes:
+      - auth_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fasttech-network
+
+  auth-migrations:
+    build:
+      context: ./autenticacao-api/FastTech.Autenticacao
+      dockerfile: dockerfile-migration
+    image: auth-migrations-image
+    restart: "no"
+    depends_on:
+      auth-mysql:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CONNECTION_STRING=Server=catalogo-mysql;Database=fasttech_autenticacao;User=root;Password=123456;Port=3306;
+    networks:
+      - fasttech-network
+
+  auth-api:
+    build:
+      context: ./autenticacao-api/FastTech.Autenticacao
+      dockerfile: dockerfile
+    image: auth-api-image
+    ports:
+      - "8082:8080"
+    depends_on:
+      auth-mysql:
+        condition: service_healthy
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CONNECTION_STRING=Server=catalogo-mysql;Database=fasttech_autenticacao;User=root;Password=123456;Port=3306;
+      - RABBITMQ_HOST=rabbitmq
+    networks:
+      - fasttech-network
+  # # ---------- Pedido ----------
+  # pedido-mysql:
+  #   image: mysql:8.0
+  #   ports:
+  #     - "3312:3306"
+  #   environment:
+  #     - MYSQL_ROOT_PASSWORD=123456
+  #     - MYSQL_DATABASE=fasttech_pedido
+  #   volumes:
+  #     - pedido_mysql_data:/var/lib/mysql
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - fasttech-network
+
+  # pedido-migrations:
+  #   build:
+  #     context: ./pedido-api/FastTech.Pedido
+  #     dockerfile: dockerfile.migrations
+  #   image: pedido-migrations-image
+  #   restart: "no"
+  #   depends_on:
+  #     pedido-mysql:
+  #       condition: service_healthy
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #     - CONNECTION_STRING=Server=pedido-mysql;Database=fasttech_pedido;User=root;Password=123456;Port=3306;
+  #   networks:
+  #     - fasttech-network
+
+  # pedido-api:
+  #   build:
+  #     context: ./pedido-api/FastTech.Pedido
+  #     dockerfile: dockerfile
+  #   image: pedido-api-image
+  #   ports:
+  #     - "8083:8080"
+  #   depends_on:
+  #     pedido-mysql:
+  #       condition: service_healthy
+  #   restart: always
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #     - CONNECTION_STRING=Server=pedido-mysql;Database=fasttech_pedido;User=root;Password=123456;Port=3306;
+  #     - RABBITMQ_HOST=rabbitmq
+  #   networks:
+  #     - fasttech-network
+
+volumes:
+  catalogo_mysql_data:
+  auth_mysql_data:
+    # pedido_mysql_data:
+
+networks:
+  fasttech-network:

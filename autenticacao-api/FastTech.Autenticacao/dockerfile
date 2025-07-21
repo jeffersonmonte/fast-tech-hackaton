@@ -1,0 +1,30 @@
+# Imagem base com runtime do .NET 8
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+# Imagem para build com SDK do .NET 8
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copia o solution e os projetos (ajuste os nomes conforme sua estrutura real)
+COPY ["FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj", "FastTech.Autenticacao.Api/"]
+COPY ["FastTech.Autenticacao.Application/FastTech.Autenticacao.Application.csproj", "FastTech.Autenticacao.Application/"]
+COPY ["FastTech.Autenticacao.Domain/FastTech.Autenticacao.Domain.csproj", "FastTech.Autenticacao.Domain/"]
+COPY ["FastTech.Autenticacao.Infrastructure/FastTech.Autenticacao.Infrastructure.csproj", "FastTech.Autenticacao.Infrastructure/"]
+
+# Restaura os pacotes
+RUN dotnet restore "FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj"
+
+# Copia tudo e publica em Release
+COPY . .
+WORKDIR "/src/FastTech.Autenticacao.Api"
+RUN dotnet publish -c Release -o /app/publish
+
+# Cria a imagem final
+FROM base AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# Ponto de entrada da API
+ENTRYPOINT ["dotnet", "FastTech.Autenticacao.Api.dll"]
