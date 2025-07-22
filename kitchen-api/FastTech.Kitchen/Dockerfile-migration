@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migration
+ENV PATH="$PATH:/root/.dotnet/tools"
+WORKDIR /src
+COPY . .
+WORKDIR "/src/FastTech.Kitchen/FastTech.Kitchen.Infrastructure"
+RUN dotnet restore FastTech.Kitchen.Infrastructure.csproj \
+ && dotnet tool install --global dotnet-ef \
+ && dotnet ef database update \
+      --project FastTech.Kitchen.Infrastructure.csproj \
+      --startup-project ../FastTech.Kitchen.Api/FastTech.Kitchen.Api.csproj

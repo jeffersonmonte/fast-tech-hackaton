@@ -1,14 +1,17 @@
 using FastTech.Autenticacao.Application;
 using FastTech.Autenticacao.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Prometheus;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-var key = Encoding.ASCII.GetBytes(configuration.GetValue<string>("SecretJWT")!);
+var secret = builder.Configuration["SecretJWT"]
+    ?? throw new InvalidOperationException("A configuração 'SecretJWT' não foi fornecida.");
+var key = Encoding.UTF8.GetBytes(secret);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

@@ -1,30 +1,31 @@
-# Imagem base com runtime do .NET 8
+# -------- Runtime --------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-# Imagem para build com SDK do .NET 8
+# -------- Build --------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copia o solution e os projetos (ajuste os nomes conforme sua estrutura real)
-COPY ["FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj", "FastTech.Catalogo.Api/"]
-COPY ["FastTech.Catalogo.Application/FastTech.Catalogo.Application.csproj", "FastTech.Catalogo.Application/"]
-COPY ["FastTech.Catalogo.Domain/FastTech.Catalogo.Domain.csproj", "FastTech.Catalogo.Domain/"]
-COPY ["FastTech.Catalogo.Infrastructure/FastTech.Catalogo.Infrastructure.csproj", "FastTech.Catalogo.Infrastructure/"]
+# 1) Copia apenas os .csproj para aproveitar cache
+COPY ["FastTech.Catalogo/FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj", "FastTech.Catalogo/FastTech.Catalogo.Api/"]
+COPY ["FastTech.Catalogo/FastTech.Catalogo.Application/FastTech.Catalogo.Application.csproj", "FastTech.Catalogo/FastTech.Catalogo.Application/"]
+COPY ["FastTech.Catalogo/FastTech.Catalogo.Domain/FastTech.Catalogo.Domain.csproj", "FastTech.Catalogo/FastTech.Catalogo.Domain/"]
 
-# Restaura os pacotes
-RUN dotnet restore "FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj"
+# 2) Restaura o projeto de API
+RUN dotnet restore "FastTech.Catalogo/FastTech.Catalogo.Api/FastTech.Catalogo.Api.csproj"
 
-# Copia tudo e publica em Release
+# 3) Copia todo o código (incluindo Program.cs e Controllers)
 COPY . .
-WORKDIR "/src/FastTech.Catalogo.Api"
-RUN dotnet publish -c Release -o /app/publish
 
-# Cria a imagem final
+# 4) Acesse a pasta certa antes de publicar
+WORKDIR "/src/FastTech.Catalogo/FastTech.Catalogo.Api"
+
+# 5) Publica o executável, agora com entry-point
+RUN dotnet publish "FastTech.Catalogo.Api.csproj" -c Release -o /app/publish
+
+# -------- Final --------
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-
-# Ponto de entrada da API
 ENTRYPOINT ["dotnet", "FastTech.Catalogo.Api.dll"]

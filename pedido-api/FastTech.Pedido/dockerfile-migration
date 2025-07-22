@@ -1,13 +1,10 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
-
-COPY *.sln .
-COPY FastTech.Pedido.Api/*.csproj ./FastTech.Pedido.Api/
-COPY FastTech.Pedido.Application/*.csproj ./FastTech.Pedido.Application/
-COPY FastTech.Pedido.Domain/*.csproj ./FastTech.Pedido.Domain/
-COPY FastTech.Pedido.Infraestructure/*.csproj ./FastTech.Pedido.Infraestructure/
-RUN dotnet restore
-
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migration
+ENV PATH="$PATH:/root/.dotnet/tools"
+WORKDIR /src
 COPY . .
-WORKDIR /app/FastTech.Pedido.Api
-ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "../FastTech.Pedido.Infrastructure/FastTech.Pedido.Infrastructure.csproj"]
+WORKDIR "/src/FastTech.Pedido/FastTech.Pedido.Infrastructure"
+RUN dotnet restore FastTech.Pedido.Infrastructure.csproj \
+ && dotnet tool install --global dotnet-ef \
+ && dotnet ef database update \
+      --project FastTech.Pedido.Infrastructure.csproj \
+      --startup-project ../FastTech.Pedido.Api/FastTech.Pedido.Api.csproj

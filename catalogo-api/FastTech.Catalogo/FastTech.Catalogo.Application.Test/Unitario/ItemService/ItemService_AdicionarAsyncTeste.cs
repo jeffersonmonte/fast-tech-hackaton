@@ -1,4 +1,5 @@
 ﻿using FastTech.Catalogo.Application.Dtos;
+using FastTech.Catalogo.Application.Interfaces;
 using FastTech.Catalogo.Domain.Entities;
 using FastTech.Catalogo.Domain.Interfaces;
 using FastTech.Catalogo.Domain.ValueObjects;

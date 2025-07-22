@@ -16,10 +16,16 @@ namespace FastTech.Kitchen.Infrastructure.Messaging
 
         public RabbitMQConsumer(IPedidoRepository pedidoRepository)
         {
-            var factory = new ConnectionFactory() { HostName = "localhost" }; // Mudar para configuração
+            _pedidoRepository = pedidoRepository;
+
+            var hostname = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost";
+            var factory = new ConnectionFactory
+            {
+                HostName = hostname
+            };
+
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _pedidoRepository = pedidoRepository;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)

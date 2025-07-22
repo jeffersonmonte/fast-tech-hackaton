@@ -1,17 +1,31 @@
+# -------- Runtime --------
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+# -------- Build --------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-COPY *.sln .
-COPY FastTech.Kitchen.Api/*.csproj ./FastTech.Kitchen.Api/
-COPY FastTech.Kitchen.Application/*.csproj ./FastTech.Kitchen.Application/
-COPY FastTech.Kitchen.Domain/*.csproj ./FastTech.Kitchen.Domain/
-COPY FastTech.Kitchen.Infrastructure/*.csproj ./FastTech.Kitchen.Infrastructure/
-RUN dotnet restore
+# 1) Copia apenas os .csproj para aproveitar cache
+COPY ["FastTech.Kitchen/FastTech.Kitchen.Api/FastTech.Kitchen.Api.csproj", "FastTech.Kitchen/FastTech.Kitchen.Api/"]
+COPY ["FastTech.Kitchen/FastTech.Kitchen.Application/FastTech.Kitchen.Application.csproj", "FastTech.Kitchen/FastTech.Kitchen.Application/"]
+COPY ["FastTech.Kitchen/FastTech.Kitchen.Domain/FastTech.Kitchen.Domain.csproj", "FastTech.Kitchen/FastTech.Kitchen.Domain/"]
 
+# 2) Restaura o projeto de API
+RUN dotnet restore "FastTech.Kitchen/FastTech.Kitchen.Api/FastTech.Kitchen.Api.csproj"
+
+# 3) Copia todo o código (incluindo Program.cs e Controllers)
 COPY . .
-RUN dotnet publish -c Release -o out
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# 4) Acesse a pasta certa antes de publicar
+WORKDIR "/src/FastTech.Kitchen/FastTech.Kitchen.Api"
+
+# 5) Publica o executável, agora com entry-point
+RUN dotnet publish "FastTech.Kitchen.Api.csproj" -c Release -o /app/publish
+
+# -------- Final --------
+FROM base AS final
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "FastTech.Kitchen.Api.dll"]

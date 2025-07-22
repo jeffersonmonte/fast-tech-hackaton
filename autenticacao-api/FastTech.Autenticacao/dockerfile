@@ -1,30 +1,31 @@
-# Imagem base com runtime do .NET 8
+# -------- Runtime --------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-# Imagem para build com SDK do .NET 8
+# -------- Build --------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copia o solution e os projetos (ajuste os nomes conforme sua estrutura real)
-COPY ["FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj", "FastTech.Autenticacao.Api/"]
-COPY ["FastTech.Autenticacao.Application/FastTech.Autenticacao.Application.csproj", "FastTech.Autenticacao.Application/"]
-COPY ["FastTech.Autenticacao.Domain/FastTech.Autenticacao.Domain.csproj", "FastTech.Autenticacao.Domain/"]
-COPY ["FastTech.Autenticacao.Infrastructure/FastTech.Autenticacao.Infrastructure.csproj", "FastTech.Autenticacao.Infrastructure/"]
+# 1) Copia apenas os .csproj para aproveitar cache
+COPY ["FastTech.Autenticacao/FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj", "FastTech.Autenticacao/FastTech.Autenticacao.Api/"]
+COPY ["FastTech.Autenticacao/FastTech.Autenticacao.Application/FastTech.Autenticacao.Application.csproj", "FastTech.Autenticacao/FastTech.Autenticacao.Application/"]
+COPY ["FastTech.Autenticacao/FastTech.Autenticacao.Domain/FastTech.Autenticacao.Domain.csproj", "FastTech.Autenticacao/FastTech.Autenticacao.Domain/"]
 
-# Restaura os pacotes
-RUN dotnet restore "FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj"
+# 2) Restaura o projeto de API
+RUN dotnet restore "FastTech.Autenticacao/FastTech.Autenticacao.Api/FastTech.Autenticacao.Api.csproj"
 
-# Copia tudo e publica em Release
+# 3) Copia todo o código (incluindo Program.cs e Controllers)
 COPY . .
-WORKDIR "/src/FastTech.Autenticacao.Api"
-RUN dotnet publish -c Release -o /app/publish
 
-# Cria a imagem final
+# 4) Acesse a pasta certa antes de publicar
+WORKDIR "/src/FastTech.Autenticacao/FastTech.Autenticacao.Api"
+
+# 5) Publica o executável, agora com entry-point
+RUN dotnet publish "FastTech.Autenticacao.Api.csproj" -c Release -o /app/publish
+
+# -------- Final --------
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-
-# Ponto de entrada da API
 ENTRYPOINT ["dotnet", "FastTech.Autenticacao.Api.dll"]

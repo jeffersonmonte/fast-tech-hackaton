@@ -25,7 +25,8 @@ namespace FastTech.Autenticacao.Infrastructure.Security
 
         public string GerarToken(UsuarioOutputDto usuario)
         {
-            var chaveSecreta = _configuration["SecretJWT"]!;
+            var chaveSecreta = _configuration["SecretJWT"]
+    ?? throw new InvalidOperationException("A configuração 'SecretJWT' não foi fornecida.");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveSecreta));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
