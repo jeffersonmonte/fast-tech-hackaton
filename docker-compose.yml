@@ -159,9 +159,13 @@ services:
     build:
       context: ./kitchen-api
       dockerfile: FastTech.Kitchen/Dockerfile-migration
+    image: kitchen-migrations-image
+    restart: "no"
     depends_on:
       kitchen-mysql:
         condition: service_healthy
+    environment:
+      ConnectionStrings__Kitchen: "Server=kitchen-mysql;Database=fasttech_kitchen;User=root;Password=123456;Port=3306;"
     networks:
       - fasttech-network
 
@@ -179,7 +183,7 @@ services:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      CONNECTION_STRING: "Server=kitchen-mysql;Database=fasttech_kitchen;User=root;Password=123456;Port=3306;"
+      ConnectionStrings__Kitchen: "Server=kitchen-mysql;Database=fasttech_kitchen;User=root;Password=123456;Port=3306;"
       RABBITMQ_HOST: rabbitmq
     restart: always
     networks:

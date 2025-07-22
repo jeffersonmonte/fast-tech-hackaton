@@ -1,10 +1,25 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migration
+
 ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Connection string para o contexto KitchenDbContext - usada somente pela factory nas migrations
+ENV ConnectionStrings__Kitchen="Server=kitchen-mysql;Database=fasttech_kitchen;User=root;Password=123456;Port=3306;"
+
 WORKDIR /src
+
+# Copia todo o código-fonte
 COPY . .
+
+# Define o diretório da Infrastructure (ajuste conforme sua estrutura real)
 WORKDIR "/src/FastTech.Kitchen/FastTech.Kitchen.Infrastructure"
-RUN dotnet restore FastTech.Kitchen.Infrastructure.csproj \
- && dotnet tool install --global dotnet-ef \
- && dotnet ef database update \
-      --project FastTech.Kitchen.Infrastructure.csproj \
-      --startup-project ../FastTech.Kitchen.Api/FastTech.Kitchen.Api.csproj
+
+# Restaura os pacotes do projeto de migrations
+RUN dotnet restore FastTech.Kitchen.Infrastructure.csproj
+
+# Instala o dotnet-ef (global tool)
+RUN dotnet tool install --global dotnet-ef
+
+# Roda as migrations (usando a factory)
+RUN dotnet ef database update \
+    --project FastTech.Kitchen.Infrastructure.csproj \
+    --startup-project ../FastTech.Kitchen.Api/FastTech.Kitchen.Api.csproj

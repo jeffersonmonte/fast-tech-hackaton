@@ -1,36 +1,43 @@
 using FastTech.Kitchen.Domain.Entities;
 using FastTech.Kitchen.Domain.Interfaces;
+using FastTech.Kitchen.Infrastructure.Persistence.Command;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FastTech.Kitchen.Infrastructure.Repositories
 {
     public class PedidoRepository : IPedidoRepository
     {
-        private readonly List<Pedido> _pedidos = new List<Pedido>();
+        private readonly KitchenDbContext _context;
 
-        public Task Adicionar(Pedido pedido)
+        public PedidoRepository(KitchenDbContext context)
         {
-            _pedidos.Add(pedido);
-            return Task.CompletedTask;
+            _context = context;
         }
 
-        public Task<Pedido> ObterPorId(Guid id)
+        public async Task Adicionar(Pedido pedido)
         {
-            return Task.FromResult(_pedidos.FirstOrDefault(p => p.Id == id));
+            await _context.Pedidos.AddAsync(pedido);
+            await _context.SaveChangesAsync();
         }
 
-        public Task<IEnumerable<Pedido>> ObterTodos()
+        public async Task<Pedido> ObterPorId(Guid id)
         {
-            return Task.FromResult(_pedidos.AsEnumerable());
+            return await _context.Pedidos.Include(p => p.Itens).FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public Task Atualizar(Pedido pedido)
+        public async Task<IEnumerable<Pedido>> ObterTodos()
         {
-            var index = _pedidos.FindIndex(p => p.Id == pedido.Id);
-            if (index != -1)
-            {
-                _pedidos[index] = pedido;
-            }
-            return Task.CompletedTask;
+            return await _context.Pedidos.Include(p => p.Itens).ToListAsync();
+        }
+
+        public async Task Atualizar(Pedido pedido)
+        {
+            _context.Pedidos.Update(pedido);
+            await _context.SaveChangesAsync();
         }
     }
 }

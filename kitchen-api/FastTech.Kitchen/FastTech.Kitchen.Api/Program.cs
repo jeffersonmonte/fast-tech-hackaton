@@ -3,36 +3,22 @@ using FastTech.Kitchen.Application.Services;
 using FastTech.Kitchen.Domain.Interfaces;
 using Prometheus;
 using FastTech.Kitchen.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using FastTech.Kitchen.Infrastructure.Persistence.Command;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddSingleton<IPedidoRepository, PedidoRepository>();
+
+// 2) Register repositories and application services
+builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
 builder.Services.AddScoped<IKitchenService, KitchenService>();
+
+// 3) Register background RabbitMQ consumer
 builder.Services.AddHostedService<FastTech.Kitchen.Infrastructure.Messaging.RabbitMQConsumer>();
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseRouting();
-app.UseHttpMetrics();
-
-app.UseAuthorization();
-
-app.MapControllers();
-app.MapMetrics();
-
-app.Run();
